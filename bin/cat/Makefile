@@ -6,5 +6,5 @@ JAVA_SRCS := Cat.java
 JAVAC_FLAGS +=
 JAR_FLAGS += 
 
-include general.mk
-include java_prog.mk
+include chimera.general.mk
+include chimera.java.mk

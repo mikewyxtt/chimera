@@ -1,0 +1,10 @@
+Chimera is a Unix-like operating system that utilizes a hybrid memory protection model. All memory safe code (written in Java) shares a single address space while unsafe code
+utilizes the traditional hardware based memory protection model found in modern OSs.
+
+The system itself utilizes a microkernel design. The kernel is written in Rust and provides minimal functionality, while the rest of the system is written in Java and utilizes
+message passing and system calls to provide traditional operating system support to user applicatoins. The JVM is written in Rust and provides isolation between processes within
+the shared address space. Any application software that cannot be ran from within the JVM is assigned it's own virtual address space at the hardware level.
+
+Processes that are running within the JVM are referred to as Software Isolated Processes(SIPs), while native processes are referred to as Hardware Isolated Processes(HIPs).
+
+For more info, please see the Wiki.

@@ -1,7 +1,7 @@
-JAVA_PROG := echo
-ENTRY_CLASS := Echo
+JAVA_PROG := hello
+ENTRY_CLASS := Hello
 
-JAVA_SRCS := Echo.java
+JAVA_SRCS := Hello.java
 
 JAVAC_FLAGS +=
 JAR_FLAGS += 

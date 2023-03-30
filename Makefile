@@ -1,30 +1,19 @@
-RUST_LIBS := lib/chimera 
-#PROGS := bin/cat bin/echo bin/hello
+# Simple top level makefile to build the entire system
+RUSTC:=rustc
 
-PROGS := bin/hello
+BASE_SYSTEM += bin/echo/echo
 
 
 .PHONY: all clean
 
-all:
-	@echo "Building Java libraries..."
-	@for java_prog in $(RUST_LIBS); do \
-		make -I $(PWD)/include -C $$java_prog all; \
-	done
-
-	@echo "Building Java programs..."
-	@for java_lib in $(PROGS); do \
-		make -I $(PWD)/include -C $$java_lib all; \
-	done
+all: $(BASE_SYSTEM)
+	
 
 clean:
-	@echo "Cleaning build files..."
-	@for java_lib in $(RUST_LIBS); do \
-		make -I $(PWD)/include -C $$java_lib clean; \
-	done
+	rm -Rf $(BASE_SYSTEM)
 
-	@for java_prog in $(PROGS); do \
-		make -I $(PWD)/include -C $$java_prog clean; \
-	done
+bin/echo/echo : bin/echo/echo.rs
 
-	@echo "Cleaning done."
+% : %.rs
+	@echo "[RUSTC]\t" $<
+	$(RUSTC) -o $@ $<

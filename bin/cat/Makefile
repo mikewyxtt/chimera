@@ -1,12 +1,12 @@
 include chimera.general.mk
 
-JAVA_PROG := cat
+PROG := cat
 ENTRY_CLASS := Cat
 
-JAVA_SRCS := Cat.java
+RUST_SRCS := Cat.java
 
-JAVAC_FLAGS +=
+RUSTC_FLAGS +=
 JAR_FLAGS += 
 
 
-include chimera.java.prog.mk
+include chimera.rust.prog.mk

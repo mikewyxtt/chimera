@@ -1,10 +1,7 @@
-JAVA_PROG := echo
-ENTRY_CLASS := Echo
+PROG := echo
+RUST_SRCS := echo.rs
 
-JAVA_SRCS := Echo.java
-
-JAVAC_FLAGS +=
-JAR_FLAGS += 
+RUSTC_FLAGS +=
 
 include chimera.general.mk
-include chimera.java.prog.mk
+include chimera.rust.prog.mk

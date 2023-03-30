@@ -1,9 +1,9 @@
 include chimera.general.mk
-JAVA_LIB := chimera.lib
+RUST_LIB := chimera.lib
 
-JAVA_SRCS := sys/Test.java
+RUST_SRCS := sys/Test.java
 
-JAVAC_FLAGS +=
+RUSTC_FLAGS +=
 JAR_FLAGS := 
 
 include chimera.java.lib.mk

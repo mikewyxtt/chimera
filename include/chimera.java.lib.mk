@@ -1,21 +1,21 @@
 JAR_FLAGS += cvf
 
-JAVA_CLASSES := $(patsubst %.java,%.class,$(JAVA_SRCS))
+RUST_CLASSES := $(patsubst %.java,%.class,$(RUST_SRCS))
 
 # Java source -> class pattern rule
 %.class : %.java
-	@$(ECHO) "[JAVAC]\t" $< "->" $@
-	$(VERBOSE) $(JAVAC) $(JAVAC_FLAGS) $<
+	@$(ECHO) "[RUSTC]\t" $< "->" $@
+	$(VERBOSE) $(RUSTC) $(RUSTC_FLAGS) $<
 
 
 # Make a JAR
-$(JAVA_LIB): $(JAVA_CLASSES)
-	@$(ECHO) "Making library JAR: " $(JAVA_LIB) "\b..."
-	$(VERBOSE) $(JAR) $(JAR_FLAGS) $(JAVA_LIB) $(JAVA_CLASSES)
+$(RUST_LIB): $(RUST_CLASSES)
+#	@$(ECHO) "Making library JAR: " $(RUST_LIB) "\b..."
+#	$(VERBOSE) $(JAR) $(JAR_FLAGS) $(RUST_LIB) $(RUST_CLASSES)
 
 .PHONY: all
-all: $(JAVA_LIB)
+all: $(RUST_LIB)
 
 .PHONY: clean
 clean:
-	$(VERBOSE) $(RM) -f $(JAVA_CLASSES) $(JAVA_LIB)
+	$(VERBOSE) $(RM) -f $(RUST_CLASSES) $(RUST_LIB)

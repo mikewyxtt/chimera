@@ -14,7 +14,16 @@
 ##  copy of the GNU General Public License along with Chimera. If not, see <https://www.gnu.org/licenses/>.
 ## 
 
-sys/loader/loader : sys/loader/x86_64/entry.S \
-					sys/loader/loader.S
 
-KERNEL_TARGETS += sys/loader/loader
+# Assembles MBR
+sys/loader/loader.o : sys/loader/loader.S
+	$(AS) -c sys/loader/loader.S -o sys/loader/loader.o --target=i386-unknown-linux-gnu
+
+
+# Links MBR into flat binary
+sys/loader/loader.bin : sys/loader/loader.o
+	$(LD) -o sys/loader/loader.bin -e init sys/loader/loader.o 	--oformat binary \
+																	--section-start=.text=0x7c00
+
+WORLD_TARGETS += sys/loader/loader.bin
+CLEAN_TARGETS += sys/loader/loader.o

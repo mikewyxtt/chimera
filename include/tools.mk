@@ -18,6 +18,6 @@ VERBOSE := @
 
 RUSTC := rustc
 KOTLINC := kotlinc
-AS := $(VERBOSE)clang
-LD := $(VERBOSE)ld.lld
+AS := clang
+LD := ld.lld
 ECHO := @echo

@@ -33,7 +33,8 @@ include include/tools.mk
 
 
 ## Include kernel and application makefiles ##
-#include sys/sys.mk
+include sys/loader/loader.mk
+include sys/sys.mk
 include bin/bin.mk
 
 
@@ -57,5 +58,5 @@ release: $(KERNEL_TARGETS) $(WORLD_TARGETS)
 
 .PHONY: clean
 clean:
-	@rm -Rf $(WORLD_TARGETS)
+	@rm -Rf $(WORLD_TARGETS) $(KERNEL_TARGETS) $(CLEAN_TARGETS)
 	@echo "Source tree cleaned successfully."

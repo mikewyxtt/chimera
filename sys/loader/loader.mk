@@ -15,15 +15,18 @@
 ## 
 
 
-# Assembles MBR
-sys/loader/loader.o : sys/loader/loader.S
-	$(AS) -c sys/loader/loader.S -o sys/loader/loader.o --target=i386-unknown-linux-gnu
+# Assemble and link stage0 
+sys/loader/stage0 : sys/loader/stage0.S
+	$(AS) -c $< -o $@.o --target=i386-unknown-linux-gnu
+	$(LD) -o $@ -e entry $@.o --oformat binary --section-start=.text=0x600
 
+# Assemble and link stage1
+#sys/loader/stage1 : sys/loader/stage1.S
+#	$(AS) -c $< -o $@.o --target=i386-unknown-linux-gnu
+#	$(LD) -o $@ -e stage1_entry $@.o --oformat binary --section-start=.text=0x7C00
 
-# Links MBR into flat binary
-sys/loader/loader.bin : sys/loader/loader.o
-	$(LD) -o sys/loader/loader.bin -e init sys/loader/loader.o 	--oformat binary \
-																	--section-start=.text=0x7c00
+WORLD_TARGETS += 	sys/loader/stage0 
+#					sys/loader/stage1
 
-WORLD_TARGETS += sys/loader/loader.bin
-CLEAN_TARGETS += sys/loader/loader.o
+CLEAN_TARGETS += 	sys/loader/stage0.o 
+#					sys/loader/stage1.o

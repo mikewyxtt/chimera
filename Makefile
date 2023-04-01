@@ -34,8 +34,8 @@ include include/tools.mk
 
 ## Include kernel and application makefiles ##
 include sys/loader/loader.mk
-include sys/sys.mk
-include bin/bin.mk
+#include sys/sys.mk
+#include bin/bin.mk
 
 
 ### Build targets ###
@@ -53,7 +53,6 @@ all: $(KERNEL_TARGETS) $(WORLD_TARGETS)
 .PHONY: release
 release: $(KERNEL_TARGETS) $(WORLD_TARGETS)
 	@echo "buildworld + buildkernel complete."
-	@echo "Creating release image..."
 	@sh tools/mkimage.sh
 
 .PHONY: clean

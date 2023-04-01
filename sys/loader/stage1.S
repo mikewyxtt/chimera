@@ -1,9 +1,9 @@
 /*
  *	[File]
- *	sys/loader/entry.S
+ *	sys/loader/stage1.S
  * 
  *  [Description]
- *  Bootloader Master Boot Record.
+ *  Just after the MBR, this part of the bootloader preps the system a bit more before running the loader program itself
  *
  * Copyright (C) 2023 Michael Wyatt
  *
@@ -17,6 +17,10 @@
 
 .code16 # use 16 bits
 .global init
+
+/*
+        CHANGE ENTRY TO STAGE1_ENTRY!!!!!!!!
+*/
 
 init:
     # Set video mode to 80x25. This will also clear the screen
@@ -76,8 +80,7 @@ done:
 
 
 /* Data section */
-init_msg: .asciz "Chimera Bootloader v0.0\n"
-init_msg2: .asciz "Chimera Bootloaddddder v0.0"
+init_msg: .asciz "Chimera Bootloader stage1 v0.0\n"
 
 /* Add magic number/boot signature for BIOS. Pad rest of the binary with zeros. */
 .fill 510-(.-init), 1, 0

@@ -1,9 +1,9 @@
 /*
  *	[File]
- *	sys/kernel/init
+ *	sys/kernel/kernel.S
  * 
  *  [Description]
- *  Kernel init routine.
+ *  Template kernel to test bootloader...
  *
  * Copyright (C) 2023 Michael Wyatt
  *
@@ -15,7 +15,4 @@
  * 
  */
 
-
-fn init() {
-
-}
+ 

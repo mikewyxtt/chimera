@@ -14,4 +14,16 @@
 ##  copy of the GNU General Public License along with Chimera. If not, see <https://www.gnu.org/licenses/>.
 ##
 
-echo "mkimage script"
+echo "Creating release image..."
+
+# Create dir for ISO files
+mkdir -p ISO
+
+# Make bootable 14.4MB floppy disk image(full size would be 2880 sectors but we use 2876 to account for 4 sector MBR)
+dd if=mbr.bin of=bootdisk.img bs=512 count=1
+dd if=/dev/zero of=bootdisk.img bs=512 count=2876 seek=1
+cp bootdisk.img ISO
+
+# Create the ISO, delete temporary files
+mkisofs -o chimera.iso -V Chimera -b bootdisk.img ISO
+rm -Rf ISO floppy.img bootdisk.img

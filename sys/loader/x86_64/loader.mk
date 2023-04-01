@@ -1,9 +1,9 @@
 ##
 ## 	[File]
-##	sys/sys.mk
+##	sys/loader/loader.mk
 ##  
 ##  [Description]
-##	Adds everything in sys/ to build list
+##	Creates bootloader build target
 ## 
 ##  Copyright (C) 2023 Michael Wyatt
 ## 
@@ -14,4 +14,7 @@
 ##  copy of the GNU General Public License along with Chimera. If not, see <https://www.gnu.org/licenses/>.
 ## 
 
-include sys/loader/loader.mk
+sys/loader/loader : sys/loader/x86_64/entry.S \
+					sys/loader/loader.S
+
+KERNEL_TARGETS += sys/loader/loader

@@ -14,6 +14,7 @@
 ##  copy of the GNU General Public License along with Chimera. If not, see <https://www.gnu.org/licenses/>.
 ## 
 
-bin/cat/cat : bin/cat/cat.rs
+bin/cat/cat.jar : bin/cat/cat.kt
+	$(KOTLINC) -d $@ -include-runtime  $<
 
-WORLD_TARGETS += bin/cat/cat
+WORLD_TARGETS += bin/cat/cat.jar

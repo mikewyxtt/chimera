@@ -1,9 +1,9 @@
 ##
 ## 	[File]
-##	include/rules.mk
+##	tools/mkimage.sh
 ##  
 ##  [Description]
-##	Defines the rules used in the makefile
+##	Script that creates a bootable disk image
 ## 
 ##  Copyright (C) 2023 Michael Wyatt
 ## 
@@ -12,10 +12,6 @@
 ##  either version 3 of the License, or (at your option) any later version. Chimera is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 ##  even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a
 ##  copy of the GNU General Public License along with Chimera. If not, see <https://www.gnu.org/licenses/>.
-## 
+##
 
-# Rule to build rust sources into executables
-% : %.rs
-	@echo "[RUSTC]\t" $< "->" $@
-	@$(RUSTC) -o $@ $<
-	@echo "Done."
+echo "mkimage script"

@@ -14,5 +14,5 @@
 ##  copy of the GNU General Public License along with Chimera. If not, see <https://www.gnu.org/licenses/>.
 ## 
 
-# include bin/cat/cat.mk
-# include bin/echo/echo.mk
+include bin/cat/cat.mk
+include bin/echo/echo.mk

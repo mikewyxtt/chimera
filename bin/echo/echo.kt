@@ -1,6 +1,6 @@
 /*
  *	[File]
- *	bin/echo/FIXME
+ *	bin/echo/echo.kt
  * 
  *	[Description]
  *	Utility to print text to screen
@@ -15,35 +15,33 @@
  * 
  */
 
-use std::env;
 
-fn main() {
-	let args: Vec<String> = env::args().collect();
-	let mut n_flag = false;
+fun main(args: Array<String>) {
+	val space = ' '
+	val newline = '\n'
 
-	let space = ' ';
-	let newline = '\n';
-
-	let mut i = 1;
+    var n_flag = false;
+    var i = 0
 
 	/* 
  	 * Check for "-n" flag. If present, change n_flag to true and move iterator forward to prevent "-n" from printing to the screen. This is a 
  	 * quick and dirty way of doing this, but it works....
  	 */
-	if !args.len().eq(&1) {
-		if args[1].eq("-n") {
-			n_flag = true;
-			i+=1;
+	if (args.size >= 1) {
+		if (args[0] == "-n") {
+			n_flag = true
+			i += 1
 		}
-
-		while i < args.len() {
-			print!("{}{}", args[i], space);
-			i+=1;
+        
+		while (i < args.size) {
+            print(args[i])
+            print(space)
+			i += 1
 		}
 	}
 
 	// Print newline before exiting, unless -n flag was used
-	if !n_flag {
-		print!("{}", newline);
+	if (!n_flag) {
+		print(newline)
 	}
 }

@@ -14,51 +14,48 @@
 ##  copy of the GNU General Public License along with Chimera. If not, see <https://www.gnu.org/licenses/>.
 ##
 
+
+### HOW TO USE THIS MAKEFILE ###
+## 'make buildkernel'		Compiles the kernel by itself
+## 'make buildworld:'		Compiles userspace apps/bootloader
+## 'make all'				Compiles everything
+## 'make release'			Compiles everything and creates a bootable image
+###
+
+
 # Include the tool definitions
 include include/tools.mk
+
+.DEFAULT_GOAL := all
 
 # Uncommenting this line allows you to see every command run by the makefile
 #VERBOSE := 
 
 
-.PHONY: all
-all:
-	$(ECHO) "ERROR: 'make all' not supported.\n"
-	$(ECHO) "usage:"
-	$(ECHO) "'make world'\t" "Builds user software"
-	$(ECHO) "'make kernel'\t" "Builds kernel"
-	$(ECHO) "'make release'\t" "Builds the entire system, then creates images"
-
-
-# Include kernel and application makefiles
-include sys/sys.mk
+## Include kernel and application makefiles ##
+#include sys/sys.mk
 include bin/bin.mk
 
 
-### Base system targets ###
-.PHONY: kernel
-kernel: $(KERNEL_TARGETS)
+### Build targets ###
+.PHONY: buildkernel
+buildkernel: $(KERNEL_TARGETS)
+	@echo "buildkernel complete."
 
-.PHONY: world
-world: $(WORLD_TARGETS)
+.PHONY: buildworld
+buildworld: $(WORLD_TARGETS)
+	@echo "buildworld complete."
 
+.PHONY: all
+all: $(KERNEL_TARGETS) $(WORLD_TARGETS)
 
-### Misc targets ###
-## Removes build files
-clean:
-	@echo "Cleaning source tree..."
-	@rm -Rf $(WORLD_TARGETS)
-	@echo "Source tree cleaned."
-
-# Builds entire system then creates ISO image
 .PHONY: release
-release: $(kernel) $(mkimage)
+release: $(KERNEL_TARGETS) $(WORLD_TARGETS)
+	@echo "buildworld + buildkernel complete."
+	@echo "Creating release image..."
+	@sh tools/mkimage.sh
 
-# Creates ISO image
-.PHONY: mkimage
-mkimage:
-	$(ECHO) "Creating ISO image..."
-
-
-# Include rules to build the stuff above ^^
-include include/rules.mk
+.PHONY: clean
+clean:
+	@rm -Rf $(WORLD_TARGETS)
+	@echo "Source tree cleaned successfully."

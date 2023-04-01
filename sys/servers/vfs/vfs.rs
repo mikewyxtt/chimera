@@ -1,9 +1,9 @@
 /*
  *	[File]
- *	bin/echo/FIXME
+ *	sys/servers/vfs/vfs.rs
  * 
  *	[Description]
- *	Utility to print text to screen
+ *	vfs server main source file.
  *
  * Copyright (C) 2023 Michael Wyatt
  *
@@ -14,36 +14,3 @@
  * copy of the GNU General Public License along with Chimera. If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-
-use std::env;
-
-fn main() {
-	let args: Vec<String> = env::args().collect();
-	let mut n_flag = false;
-
-	let space = ' ';
-	let newline = '\n';
-
-	let mut i = 1;
-
-	/* 
- 	 * Check for "-n" flag. If present, change n_flag to true and move iterator forward to prevent "-n" from printing to the screen. This is a 
- 	 * quick and dirty way of doing this, but it works....
- 	 */
-	if !args.len().eq(&1) {
-		if args[1].eq("-n") {
-			n_flag = true;
-			i+=1;
-		}
-
-		while i < args.len() {
-			print!("{}{}", args[i], space);
-			i+=1;
-		}
-	}
-
-	// Print newline before exiting, unless -n flag was used
-	if !n_flag {
-		print!("{}", newline);
-	}
-}

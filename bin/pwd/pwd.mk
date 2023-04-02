@@ -1,9 +1,9 @@
 ##
 ## 	[File]
-##	bin/bin.mk
+##	bin/pwd/pwd.mk
 ##  
 ##  [Description]
-##	Adds everything in bin/ to build list
+##	Adds pwd to WORLD_TARGET list.
 ## 
 ##  Copyright (C) 2023 Michael Wyatt
 ## 
@@ -14,6 +14,7 @@
 ##  copy of the GNU General Public License along with Chimera. If not, see <https://www.gnu.org/licenses/>.
 ## 
 
-include bin/cat/cat.mk
-include bin/echo/echo.mk
-include bin/pwd/pwd.mk
+bin/pwd/pwd.jar : bin/pwd/pwd.kt
+	$(KOTLINC) -d $@ -include-runtime  $<
+
+WORLD_TARGETS += bin/pwd/pwd.jar

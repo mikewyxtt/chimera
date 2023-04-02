@@ -35,7 +35,7 @@ include include/tools.mk
 ## Include kernel and application makefiles ##
 include sys/loader/loader.mk
 #include sys/sys.mk
-#include bin/bin.mk
+include bin/bin.mk
 
 
 ### Build targets ###

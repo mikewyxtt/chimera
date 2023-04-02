@@ -21,12 +21,12 @@ sys/loader/stage0 : sys/loader/stage0.S
 	$(LD) -o $@ -e entry $@.o --oformat binary --section-start=.text=0x600
 
 # Assemble and link stage1
-#sys/loader/stage1 : sys/loader/stage1.S
-#	$(AS) -c $< -o $@.o --target=i386-unknown-linux-gnu
-#	$(LD) -o $@ -e stage1_entry $@.o --oformat binary --section-start=.text=0x7C00
+sys/loader/stage1 : sys/loader/stage1.S
+	$(AS) -c $< -o $@.o --target=i386-unknown-linux-gnu
+	$(LD) -o $@ -e entry $@.o --oformat binary --section-start=.text=0x7C00
 
-WORLD_TARGETS += 	sys/loader/stage0 
-#					sys/loader/stage1
+WORLD_TARGETS += 	sys/loader/stage0 \
+					sys/loader/stage1
 
-CLEAN_TARGETS += 	sys/loader/stage0.o 
-#					sys/loader/stage1.o
+CLEAN_TARGETS += 	sys/loader/stage0.o \
+					sys/loader/stage1.o

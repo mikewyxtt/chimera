@@ -16,13 +16,13 @@
  */
 
 .code16 # use 16 bits
-.global init
+.global entry
 
 /*
         CHANGE ENTRY TO STAGE1_ENTRY!!!!!!!!
 */
 
-init:
+entry:
     # Set video mode to 80x25. This will also clear the screen
     MOV $0x00, %AH
     MOV $0X03, %AL
@@ -83,5 +83,5 @@ done:
 init_msg: .asciz "Chimera Bootloader stage1 v0.0\n"
 
 /* Add magic number/boot signature for BIOS. Pad rest of the binary with zeros. */
-.fill 510-(.-init), 1, 0
+.fill 510-(.-entry), 1, 0
 .word 0xaa55

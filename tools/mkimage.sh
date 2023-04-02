@@ -16,14 +16,20 @@
 
 echo "Creating release image..."
 
-# Create dir for ISO files
-mkdir -p ISO
 
-# Make bootable 14.4MB floppy disk image(full size would be 2880 sectors but we use 2876 to account for 4 sector MBR)
-dd if=mbr.bin of=bootdisk.img bs=512 count=1
-dd if=/dev/zero of=bootdisk.img bs=512 count=2876 seek=1
-cp bootdisk.img ISO
+# Create a basic MBR disk image
+hdiutil create -fs FAT32 -size 50m -volname Chimera -layout MBRSPUD chimera.img
 
-# Create the ISO, delete temporary files
-mkisofs -o chimera.iso -V Chimera -b bootdisk.img ISO
-rm -Rf ISO floppy.img bootdisk.img
+# Write stage0, skip over partition table, write Magic number for last two bytes
+dd if=stage0 of=chimera.dmg conv=notrunc bs=1 count=446
+dd if=stage0 of=chimera.dmg conv=notrunc bs=1 count=2 skip=510 seek=510
+
+# Write stage1 at the very beginning of the first partition
+dd if=stage1 of=chimera.dmg conv=notrunc bs=1 count=512 seek=512
+
+# Create dir for IMG files
+mkdir -p IMG
+
+
+# Cleanup
+rm -Rf IMG floppy.img bootdisk.img

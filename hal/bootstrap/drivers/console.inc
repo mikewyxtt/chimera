@@ -21,7 +21,7 @@ print_string:
 	ret
 
 
-;; Function: clear_screen ;;
+;; Function: clear_screen() ;;
 ;  Purpose: Clears the screen
 ;  Arguments: None
 ;  Clobbers: al, a

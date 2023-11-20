@@ -3,6 +3,7 @@ bits 16				; We are still in 16 bit real mode
 
 ;; MBR read us off the disk and loaded us into memory. We are no longer confined to the 440 byte
 ;; code size limit so we can continue initializing the hardware and eventually load the kernel.
+;; A20 gate was enabled by MBR.
 ;;
 ;; Execution begins here:
 start:
@@ -11,7 +12,7 @@ start:
 	mov	ds, ax		; ?
 	mov	es, ax		; ?
 	mov	ss, ax		; Setup stack segment
-	mov	sp, 0x9C00	; Stack grows downwards from 0x7C00
+	mov	sp, 0x9C00	; Stack grows downwards from 0x9C00
 	
 	mov 	si, welcome_msg
 	call 	print_string	; Display welcome message

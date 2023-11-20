@@ -1,10 +1,19 @@
-; Functions that assist with console I/O
+;; Functions that assist with console I/O
 bits 16
 
-;; Function: print_string ;;
-;  Purpose: Print string to screen
-;  Arguments: SI: String to print
-;  Clobbers: AH, AL
+;;
+;; Function: 
+;;	print_string()
+;;
+;; Arguments:
+;;	SI: String to print
+;;
+;; Purpose:
+;;	Print string to screen
+;;
+;; Clobbers:
+;;	AH, AL
+;;
 print_string:
 	mov	ah, 0x0E	; Tell Bios we are going to print chars
 
@@ -20,11 +29,19 @@ print_string:
 	int	0x10
 	ret
 
-
-;; Function: clear_screen() ;;
-;  Purpose: Clears the screen
-;  Arguments: None
-;  Clobbers: al, a
+;;
+;; Function:
+;;	clear_screen()
+;;
+;; Arugments:
+;;	None.
+;;
+;; Purpose: 
+;;	Clears the screen
+;; 
+;; Clobbers:
+;;	AL, AH
+;;
 clear_screen:
 	;; The simplest way to clear the screen in this context is to simply
 	;; reset the screen resolution.
@@ -32,5 +49,4 @@ clear_screen:
 	mov	al, 0x03	; Tell BIOS we want 80x25
 	int	0x10		; Set video mode
 	ret
-; bits 32
 

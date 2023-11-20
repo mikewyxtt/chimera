@@ -1,11 +1,11 @@
 .PHONY: all clean qemu
-all: loader.bin
+all: mbr/mbr
 	
-loader.bin: loader.S stdio.S a20.S gdt.S
-	@nasm -fbin -o loader.bin loader.S
+mbr/mbr: mbr/mbr.S mbr/a20.inc mbr/gdt.inc drivers/console.inc
+	@nasm -fbin -o mbr/mbr mbr/mbr.S
 
 qemu:
-	qemu-system-x86_64 -hda loader.bin
+	qemu-system-x86_64 -hda mbr/mbr
 
 clean:
-	@rm loader.bin
+	@rm mbr/mbr

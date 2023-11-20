@@ -23,7 +23,7 @@ start:
 	hlt			; Halt CPU so it doesn't do weird things
 
 bits 32
-prot_mode:
+begin_bootstrap:
 	
 	hlt
 
@@ -33,9 +33,9 @@ welcome_msg:	db "Chimera bootloader entered.", 0
 
 
 ; Includes ;
-%include "a20.S"		; Include stuff to enable A20 gate
-%include "stdio.S"		; Include stuff to do console I/O
-%include "gdt.S"		; Include GDT setup functions
+%include "mbr/a20.inc"		; Include stuff to enable A20 gate
+%include "drivers/console.inc"	; Include stuff to do console I/O
+%include "mbr/gdt.inc"		; Include GDT setup functions
 
 
 ; Special BIOS stuff

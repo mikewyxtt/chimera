@@ -27,8 +27,8 @@ flush_gdt:
 
 	mov	ebp, 0x90000		; Setup new stack
 	mov	esp, ebp
-
-	hlt
+	
+	call	begin_bootstrap
 
 
 

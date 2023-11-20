@@ -8,4 +8,4 @@ qemu:
 	qemu-system-x86_64 -hda loader.bin
 
 clean:
-	@rm a.out hello.o
+	@rm loader.bin

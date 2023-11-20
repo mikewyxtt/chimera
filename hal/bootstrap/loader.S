@@ -15,10 +15,17 @@ start:
 	
 	mov 	si, welcome_msg
 	call 	print_string	; Display welcome message
-
+	
 	call 	enable_a20	; Enable A20 gate
 	
+	call	setup_gdt	; Setup/load GDT
+
 	hlt			; Halt CPU so it doesn't do weird things
+
+bits 32
+prot_mode:
+	
+	hlt
 
 
 ; Data Section ;
@@ -28,6 +35,7 @@ welcome_msg:	db "Chimera bootloader entered.", 0
 ; Includes ;
 %include "a20.S"		; Include stuff to enable A20 gate
 %include "stdio.S"		; Include stuff to do console I/O
+%include "gdt.S"		; Include GDT setup functions
 
 
 ; Special BIOS stuff

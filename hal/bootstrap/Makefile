@@ -1,7 +1,7 @@
 .PHONY: all clean qemu
 all: loader.bin
 	
-loader.bin: loader.S
+loader.bin: loader.S stdio.S a20.S gdt.S
 	@nasm -fbin -o loader.bin loader.S
 
 qemu:

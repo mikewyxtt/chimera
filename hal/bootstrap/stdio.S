@@ -1,5 +1,5 @@
 ; Functions that assist with console I/O
-
+bits 16
 
 ;; Function: print_string ;;
 ;  Purpose: Print string to screen
@@ -32,4 +32,5 @@ clear_screen:
 	mov	al, 0x03	; Tell BIOS we want 80x25
 	int	0x10		; Set video mode
 	ret
+; bits 32
 

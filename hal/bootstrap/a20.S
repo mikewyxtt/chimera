@@ -1,4 +1,5 @@
 ; Functions to assist in dealing with the A20 gate
+bits 16
 
 ;; Function: enable_a20 ;;
 ;  Purpose: enables a20 gate
@@ -76,3 +77,4 @@ check_a20:
 a20_fail_msg:	db "Error: Could not enable A20 gate. Please use QEMU."
 a20_success_msg: db "A20 Gate enabled.", 0
 
+; bits 32

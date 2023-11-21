@@ -1,0 +1,15 @@
+Directory structure explained
+-------------------------------------
+
+mbr: 
+Master boot record. exists soley to establish a protected mode environment and load the loader into memory
+
+loader:
+Basic bootloader. Finds and loads booster, kernel the servers
+
+booster:
+Functions similar to a rocket booster. Initializes the system and gets the essential servers and drivers
+to a usable state, then passes control to the kernel and gives it information regarding where everything is.
+
+The kernel will then initialize itself and send a signal to the servers and drivers letting them know they
+can operate normally.

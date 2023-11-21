@@ -1,10 +1,16 @@
 ; Functions to assist in dealing with the A20 gate
-bits 16
 
-;; Function: enable_a20 ;;
-;  Purpose: enables a20 gate
-;  Arguments: None
-enable_a20:
+;;
+;; Function: 
+;;	ENABLE_A20()
+;;
+;; Purpose: 
+;;	Enables A20 gate
+;;
+;; Arguments: 
+;;	None
+;;
+ENABLE_A20:
 
 	; We are assuming the user is using QEMU so we basically are just making sure
 	; A20 is enabled. If it isn't we just fail. There was no reliable way of disabling
@@ -15,11 +21,11 @@ enable_a20:
 	jmp 	.fail
 
 .fail	mov 	si, a20_fail_msg
-	call 	print_string
+	call 	PRINTLN
 	hlt				; Halt CPU. Nothing to do if we dom't have A20...
 
 .done	mov	si, a20_success_msg
-	call	print_string
+	call	PRINTLN
 	ret				; A20 is enabled, continue on.
 	
 
@@ -77,4 +83,3 @@ check_a20:
 a20_fail_msg:	db "Error: Could not enable A20 gate. Please use QEMU."
 a20_success_msg: db "A20 Gate enabled.", 0
 
-; bits 32

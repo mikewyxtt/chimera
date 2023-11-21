@@ -1,5 +1,10 @@
-org 0x7C00			; Address in memory where  BIOS loads us at
-bits 16				; We start in 16 bit real mode
+ORG 0x7C00			; Address in memory where  BIOS loads us at
+BITS 16				; We start in 16 bit real mode
+
+	JMP	START		; FAT32 puts a bunch of shit in the beginning of the MBR, so we need
+	NOP			; to jump over it. JMP and NOP are standard.
+
+TIMES 	62 DB 0x00		; BIOS parameter block. We are filling with 0s as to skip over it.
 
 ;; The computer has just been powered on, BIOS did all the stuff it needs
 ;; to do to get the computer to a running state and loaded this file into RAM.
@@ -8,49 +13,65 @@ bits 16				; We start in 16 bit real mode
 ;; useful state and eventually loading up the kernel and servers.
 ;;
 ;; Execution begins here:
-start:
-	cli			; Disable interrupts before we do anything else
+START:
+	CLI			; Disable interrupts before we do anything else
 
 	;; Setup a stack
-	mov	ax, 0		; Set AX to 0, presumably bc you cant directly assign integers to those registers
-	mov	ds, ax		; ?
-	mov	es, ax		; ?
-	mov	ss, ax		; Setup stack segment
-	mov	sp, 0x7C00	; Stack grows downwards from 0x7C00
+	MOV	AX, 0		; Set AX to 0, presumably bc you cant directly assign integers to those registers
+	MOV	DS, AX		; ?
+	MOV	ES, AX		; ?
+	MOV	SS, AX		; Setup stack segment
+	MOV	SP, 0x7C00	; Stack grows downwards from 0x7C00
  
-	call 	clear_screen	; Clear the screen
+	CALL 	CLEAR_SCREEN	; Clear the screen
 	
-	mov 	si, welcome_msg
-	call 	print_string	; Display welcome message
+	MOV 	SI, WelcomeMsg	; Move welcome message into SI
+	CALL 	PRINTLN		; Display welcome message
 	
-	call 	enable_a20	; Enable A20 gate
-
+	CALL 	ENABLE_A20	; Enable A20 gate
+	CALL	SETUP_GDT	; Setup GDT
 	
 	;; We are now going to use the BIOS to read the second sector from the disk.
 	;; (we are currently on this first sector)
-	mov	al, 1		; Number of sectors to read, we want to read 1 sector (512 bytes)
-	mov	cl, 0x2		; Cylinder to read from
-	mov	dh, 0x0		; Head to read from
-	mov	bx, 0x9C00	; Memory buffer
-	call	hdd_read	; Disk read routine
+	MOV	AL, 1		; Number of sectors to read, we want to read 1 sector (512 bytes)
+	MOV	CL, 0x2		; Cylinder to read from
+	MOV	DH, 0x0		; Head to read from
+	MOV	BX, 0x9C00	; Memory buffer
+	CALL	READ_DISK	; Disk read routine
 
-	jmp	0x0000:0x9C00	; Jump to the bootstrap (Segment:Address)
+	JMP	0x0000:0x9C00	; Jump to the loader (Segment:Address)
 
-	hlt			; Halt CPU, but this should never execute.
+	HLT			; Halt CPU. This should never execute.
+
+;;
+;; FUNCTION:
+;;	PROTECTED_MODE()
+;; PURPOSE:
+;; 	SETUP_GDT() returns here. We are now in protected mode and can finish up by jumping to the loader
+;;
+BITS 32
+PROTECTED_MODE:
+	HLT
 
 
 
+;;
+;; Data Section
+;;
+WelcomeMsg:			DB "Chimera MBR entered.", 0
+LoaderReadFailMsg:		DB "Unable to read loader from disk. Halting CPU."
+LoaderFilename:			DB "LOADER"
 
-;; Data Section ;;
-welcome_msg:			db "Chimera MBR entered.", 0
-bootstrap_read_fail_msg:	db "Unable to read bootstrap from disk. Halting CPU."
+;;
+;; Include Section
+;;
+%INCLUDE "mbr/a20.inc"		; A20 gate setup code
+%INCLUDE "mbr/gdt.inc"		; GDT setup code
+%INCLUDE "mbr/vesa.inc"		; Basic VESA driver
+%INCLUDE "mbr/disk.inc"		; Basic disk driver
 
-;; Includes ;;
-%include "mbr/a20.inc"		; Include stuff to enable A20 gate
-%include "drivers/console.inc"	; Include stuff to do console I/O
-%include "drivers/disk.inc"	; Include disk driver
 
 ;; Special BIOS stuff ;
-times 	510 - ($ - $$) db 0	; BIOS expects bootsector to be 512 bytes, so we pad the file with 0's
-dw 	0xAA55			; Magic number that tells the BIOS this is an executable block of code
+TIMES 	510 - ($ - $$) DB 0	; BIOS expects bootsector to be 512 bytes, so we pad the file with 0's
+DW 	0xAA55			; Magic number that tells the BIOS this is an executable block of code
 

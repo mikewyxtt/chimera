@@ -1,7 +1,6 @@
 ;; Functions to help us setup and load a GDT
-bits 16
 
-setup_gdt:
+SETUP_GDT:
 	cli				; Disable interrupts just to be sure
 
 	xor	ax, ax			; ?
@@ -28,7 +27,7 @@ flush_gdt:
 	mov	ebp, 0x90000		; Setup new stack
 	mov	esp, ebp
 	
-	call	bootstrap_final
+	call	PROTECTED_MODE		; Go back to MBR main code file, this time in 32 bit protected mode
 
 
 

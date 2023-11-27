@@ -100,8 +100,8 @@ MAIN:
 READ_SECTOR:
 	CLC							; Clear the carry flag, just in case. Not sure if needed tbh.
 	MOV	DL, 0x80					; Primary hard disk, CHANGE THIS TO BOOT FROM OTHER MEDIA TYPES
-	MOV	[DAP.addr], BX					; Copy the buffer address into the disk address packet
-	MOV	[DAP.buff], ESI					; Copy the LBA into the DAP
+	MOV	[DAP.BUFF], BX					; Copy the buffer address into the disk address packet
+	MOV	[DAP.LBA], ESI					; Copy the LBA into the DAP
 	MOV	AH, 0X42					; BIOS extended read function, allows us to read disks > 8GB
 	MOV	SI, DAP						; Move disk address packet into SI for the BIOS to read
 	INT	0x13						; Call the BIOS
@@ -119,9 +119,9 @@ DAP:
 	DB 0x10							; size of data packet, always should be set to 0x10
 	DB 0x00							; reserved
 	DW 0x0001						; number of sectors to read
-.addr:	DW 0x0000						; 16 bit offset(address) of target buffer
+.BUFF:	DW 0x0000						; 16 bit offset(address) of target buffer
 	DW 0x0000						; 16 bit segment of target buffer
-.buff:	DD 0x00000000						; Lower 32 bits of 48 bit LBA
+.LBA:	DD 0x00000000						; Lower 32 bits of 48 bit LBA
 	DD 0x00000000						; Upper 32 bits of 48 bit LBA
 
 

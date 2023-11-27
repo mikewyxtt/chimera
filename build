@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# packages required for build:
+# make, mtools, e2tools
+
 
 make_all() {
     	make all -C $1
@@ -11,14 +14,27 @@ make_clean() {
 
 gen_image() {
 
+	# NOTE: All of the values are hard coded in this script. If you wish to make changes, you will need to manually run fdisk to get
+	# the new sector counts and partition offsets.
+	#
+	# The process is pretty simple; first we make a disk image so we can partition it as one disk. Then we copy each partition into
+	# it's own image file, since most tools expect the partitions to be represented as a seperate file 
+	# (e.g partition 1 of/dev/sda is /dev/sda1).
+	#
+	# Once the partitions are seperated we can write the boot manager to the main disk, and the MBR to the rootfs disk, then we can
+	# format each with the proper filesystem and begin transferring files. After the files are transferred we need put the individual
+	# partition images back into the main disk image
+
 	# Create 1.5GB disk image (307200 sectors)
-	mkdir -p tmp
+	mkdir -p tmp/rootfs tmp/efi_sys RELEASE
+	rm -Rf chimera.img
 	if [ ! -f tmp/hdd.img ]; then
 		dd if=/dev/zero of=tmp/hdd.img bs=512 count=3072000
 	fi
 	
 	# Partition the disk image, then split it into two images for easy transfering of files
-	fdisk hdd.img << EOF
+	# The following is literally mimicking the keystrokes needed to partition the disk using fdisk
+	fdisk tmp/hdd.img << EOF
 g
 n
 1
@@ -33,27 +49,67 @@ n
 3071966
 w
 EOF
-	# Split it into two images so we can work with the partitions easily
-	dd if=tmp/hdd.img of=tmp/efi_sys.img bs=512 seek=2048 count=1048576
-	dd if=tmp/hdd.img of=tmp/rootfs.img bs=512 seek=1050624 count=2021343
 
-	echo "Installing boot manager and MBR to disk..."
+
+	########################################################################
+	## Split it into two images so we can work with the partitions easily ##
+	########################################################################
+	dd if=tmp/hdd.img of=tmp/efi_sys.img bs=512 skip=2048 count=1048576
+	dd if=tmp/hdd.img of=tmp/rootfs.img bs=512 skip=1050624 count=2021343
+
+
+
+	#######################
+	## Format partitions ##
+	#######################
+	mkdosfs -F 32 tmp/efi_sys.img		# EFI system partition must be some kind of FAT fs
+	mkfs.ext2 tmp/rootfs.img		# Rootfs needs to be EXT2 for now
+
+
+
+
+	################
+	## Copy files ##
+	################
+	echo "Copying files..."
+
+	# Here is where we would run 'make install' for every subproject in the system, then we can transfer the files to the rootfs
+	e2cp tmp/rootfs/* tmp/rootfs.img:/
+
+
+
+
+
+	########################
+	## Install bootloader ##
+	########################
+	echo "Installing bootloader..."
+	
+	# First we flash the bootmgr and mbr for legacy BIOS systems, being careful to not overwrite the partition table. We also need to copy
+	# the magic number to the last two bytes of the first sector. Then we flash the MBR to the first sector of the primary partition (rootfs.img)
 	dd if=hal/boot/i686-amd64/bios/bootmgr of=tmp/hdd.img conv=notrunc bs=1 count=446
 	dd if=hal/boot/i686-amd64/bios/bootmgr of=tmp/hdd.img conv=notrunc bs=1 count=2 skip=510 seek=510
-	
-	# MBR is installed to the first sector of the rootfs
-	dd if=hal/boot/i686-amd64/bios/mbr of=tmp/rootfs conv=notrunc bs=512 count=1
 
-	# Copy bios loader to /boot/loader, and copy UEFI loader to the ESP
-	# $cp hal/boot/loader/loader mnt/boot/loader
-	# $mcopy -i tmp/efi_sys.img hal/boot/loader/loaderx64.ef ::/EFI/BOOTX64.EFI
+	dd if=hal/boot/i686-amd64/bios/mbr of=tmp/rootfs.img conv=notrunc bs=512 count=1
 
-	# Combine the images back into one, clean up
-	dd if=tmp/efi_sys.img of=tmp/hdd.img bs=512 seek=2048 count=1048576
-	dd if=tmp/rootfs.img of=tmp/hdd.img bs=512 seek=1050624 count=2021343
-	mv tmp/hdd.img chimera.img
+
+	# Next we copy over the EFI version of 'loader' for efi systems
+	# $$ mdir ::/efi/blahblah
+       	# $$ mcopy -i tmp/efi_sys.img hal/boot/loader/loaderx64.elf ::/EFI/BOOTx64.EFI
+
+
+
+
+
+	################################################
+	## Combine the images back into one, clean up ##
+	################################################
+	dd if=tmp/efi_sys.img of=tmp/hdd.img bs=512 seek=2048 count=1048576 conv=notrunc
+	dd if=tmp/rootfs.img of=tmp/hdd.img bs=512 seek=1050624 count=2021343 conv=notrunc
+	mv tmp/hdd.img RELEASE/CHIMERA-RELEASE-0.1.0-HDD.img
 	rm -Rf tmp
 }
+
 
 echo "Building HAL..."
 make_clean "hal/boot/i686-amd64"
@@ -61,6 +117,5 @@ make_all "hal/boot/i686-amd64"
 
 echo "Generating image..."
 gen_image
-
 
 

@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+
+make_all() {
+    	make all -C $1
+}
+
+make_clean() {
+    	make clean -C $1
+}
+
+gen_image() {
+
+	# Create 1.5GB disk image (307200 sectors)
+	mkdir -p tmp
+	if [ ! -f tmp/hdd.img ]; then
+		dd if=/dev/zero of=tmp/hdd.img bs=512 count=3072000
+	fi
+	
+	# Partition the disk image, then split it into two images for easy transfering of files
+	fdisk hdd.img << EOF
+g
+n
+1
+2048
++512M
+t
+1
+
+n
+2
+1050624
+3071966
+w
+EOF
+	# Split it into two images so we can work with the partitions easily
+	dd if=tmp/hdd.img of=tmp/efi_sys.img bs=512 seek=2048 count=1048576
+	dd if=tmp/hdd.img of=tmp/rootfs.img bs=512 seek=1050624 count=2021343
+
+	echo "Installing boot manager and MBR to disk..."
+	dd if=hal/boot/i686-amd64/bios/bootmgr of=tmp/hdd.img conv=notrunc bs=1 count=446
+	dd if=hal/boot/i686-amd64/bios/bootmgr of=tmp/hdd.img conv=notrunc bs=1 count=2 skip=510 seek=510
+	
+	# MBR is installed to the first sector of the rootfs
+	dd if=hal/boot/i686-amd64/bios/mbr of=tmp/rootfs conv=notrunc bs=512 count=1
+
+	# Copy bios loader to /boot/loader, and copy UEFI loader to the ESP
+	# $cp hal/boot/loader/loader mnt/boot/loader
+	# $mcopy -i tmp/efi_sys.img hal/boot/loader/loaderx64.ef ::/EFI/BOOTX64.EFI
+
+	# Combine the images back into one, clean up
+	dd if=tmp/efi_sys.img of=tmp/hdd.img bs=512 seek=2048 count=1048576
+	dd if=tmp/rootfs.img of=tmp/hdd.img bs=512 seek=1050624 count=2021343
+	mv tmp/hdd.img chimera.img
+	rm -Rf tmp
+}
+
+echo "Building HAL..."
+make_clean "hal/boot/i686-amd64"
+make_all "hal/boot/i686-amd64"
+
+echo "Generating image..."
+gen_image
+
+
+

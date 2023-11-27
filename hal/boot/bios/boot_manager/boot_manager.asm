@@ -19,7 +19,7 @@ ENTRY:
 	MOV	SI, SP		; Source address for the transfer (0x7C00)
 	MOV	DI, 0x600	; Destination address for the transfer (0x0600)
 	MOV	CX, 0x100	; Word count (512 bytes in this file / 2 bytes per word = 0x100)
-	REP	MOVSW		; Copy SI(0x7C00) into DI(0x0600) two bytes at a time until CX reaches 0 (256 times)
+	REP	MOVSW		; Copy SI(0x7C00) into DI(0x0600) two bytes at a time until CX reaches 0 
 
 	;; Jump to newly relocated code, basically MAIN was originally +0x7C00 from 0, but we moved it to 
 	;; +0x600 from 0. So to find MAIN we need to subtract 0x7C00 from it to then add 0x600 to it
@@ -38,7 +38,7 @@ MAIN:
 	CALL	PRINTLN
 
 	;; Load bootsector from selected partition
-	MOV	ESI, 0x100800	; Block number we want to loda
+	MOV	ESI, 0x100800	; Block number we want to load
 	MOV	BX, 0x7C00	; Address we want to load it to
 	MOV	DL, 0x80	; Disk number we want to read from
 	CALL	READ_SECTOR	; Read single sector routine
@@ -48,11 +48,18 @@ MAIN:
 	HLT			; Should never get here.
 
 
-
-
-;; ESI: LBA number
-;; BX: Transfer buffer
-
+;;
+;; Function:
+;;	READ_SECTOR()
+;;
+;; Arguments:
+;; 	ESI: 	Block number to load
+;; 	BX: 	Transfer buffer (Address)
+;;	DL:	Disk to read from. Primary HDD is 0x80
+;;
+;; Purpose:
+;;	Loads one sector from the selected disk into memeory
+;;
 READ_SECTOR:
 	MOV	[DAP.addr], BX	; Copy the buffer address into the disk address packet
 	MOV	[DAP.buff], ESI	; Copy the LBA into the DAP
@@ -67,9 +74,8 @@ READ_SECTOR:
 	CLI			; We don't have error handling, so disable interrupts and halt
 	HLT			; so the cpu can't do anything
 
-;;
+
 ;; Disk Address Packet for BIOS interrupt 0x13 extended read function
-;;
 DAP:
 	DB 0x10			; size of data packet, always should be set to 0x10
 	DB 0x00			; reserved
@@ -78,6 +84,10 @@ DAP:
 	DW 0x0000		; 16 bit segment of target buffer
 .buff:	DD 0x00000000		; Lower 32 bits of 48 bit LBA
 	DD 0x00000000		; Upper 32 bits of 48 bit LBA
+
+
+
+
 
 
 ;;

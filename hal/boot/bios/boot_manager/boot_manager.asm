@@ -37,15 +37,55 @@ MAIN:
 	MOV	SI, WelcomeMSG	; Put WelcomeMSG string address into SI register
 	CALL	PRINTLN
 
-	;; Load bootsector from selected partition
-	MOV	ESI, 0x100800	; Block number we want to load
+	;; Find bootsector ;;
+	
+	;; In the future, this boot manager will give you option to select other operating
+	;; systems and chainload bootloaders from different partitions. For the sake of
+	;; simplicity to move things along, we will just assume the bootloader we want is
+	;; on the second partition of the primary hard disk.
+
+	;; To do so, we must load the GPT header and the partition table that follows it.
+	;; These two data structures contain all the information we need to find the 
+	;; first sector of the 2nd partition of the disk, which contains our second stage
+	;; boot sector.
+
+	;; Load GPT header
+	MOV	ESI, 0x01	; GPT header is located in block 1
+	MOV	BX, 0x800	; GPT header will reside in memory at 0x800:0x1000
+	MOV	DL, 0x80
+	CALL	READ_SECTOR	; Read the GPT header into memory
+
+
+
+	;; Load Partition entries
+	MOV	ESI, 0x02	; Partition table entries are found in block 2
+	MOV	BX, 0x1000	; GPT partition table will reside in memory at 0x1000:0x1200
+	MOV	DL, 0x80	; Load from primary disk
+	CALL	READ_SECTOR	; Read the partition table entries into RAM
+
+
+
+	;; Load the bootsector
+
+	;; Find block number for 2nd partition on the disk
+	MOV	DWORD EAX, [0x854] ; Load parition entry size from GPT header into EAX
+
+	;; This next part looks complex but it is simple. We just figured out how many bytes
+	;; are in each partion entry, now we need to find the 2nd partition. The first one is
+	;; at 0x1000, so we need to seek ahead by the size of one entry (EAX) to find the 
+	;; second partition.
+	;;
+	;; The starting block of each partition is found at offset 0x20 of each entry, thus
+	;; giving us our LBA at [0x1000 + EAX + 0x20]
+	MOV	DWORD ESI, [0x1000 + EAX + 0x20] 
+	
 	MOV	BX, 0x7C00	; Address we want to load it to
 	MOV	DL, 0x80	; Disk number we want to read from
 	CALL	READ_SECTOR	; Read single sector routine
 	
-	JMP	0x0000:0x7c00	; Jump to bootloader (Segment:Address)
+	JMP	0x0000:0x7C00	; Jump to bootloader (Segment:Address)
 
-	HLT			; Should never get here.
+
 
 
 ;;
@@ -61,6 +101,7 @@ MAIN:
 ;;	Loads one sector from the selected disk into memeory
 ;;
 READ_SECTOR:
+	CLC			; Clear the carry flag, just in case. Not sure if needed tbh.
 	MOV	[DAP.addr], BX	; Copy the buffer address into the disk address packet
 	MOV	[DAP.buff], ESI	; Copy the LBA into the DAP
 	MOV	AH, 0X42	; BIOS extended read function, allows us to read disks > 8GB
@@ -119,9 +160,20 @@ PRINTLN:
 	RET			; Exit print routine
 
 
-WelcomeMSG:	DB "Boot Manager entered.", 0xA, 0xD, "Searching for bootloader..."
-DiskErrorMSG:	DB "DISK READ ERROR"
 
+
+
+
+;;
+;; Strings
+;;
+WelcomeMSG:	DB "Boot Manager entered.", 0xA, 0xD, "Searching for bootloader...", 0x0
+DiskErrorMSG:	DB "DISK READ ERROR", 0x0
+
+
+;;
+;; Compatibility stuff
+;;
 TIMES	64	DB	0	; We can't overwrite the partition table, fill with 0s
 TIMES	510 - ($ - $$) DB 0x00	; Bootloader has to be 512 bytes long, pad the missing bytes with 0s
 DW 	0xAA55			; But make the last two bytes 0xAA55

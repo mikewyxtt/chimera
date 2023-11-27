@@ -1,1 +1,5 @@
 mbr/mbr
+*.swp
+*.img
+*.bin
+

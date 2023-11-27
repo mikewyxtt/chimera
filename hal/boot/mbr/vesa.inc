@@ -41,11 +41,11 @@ PRINTLN:
 ;; Clobbers:
 ;;	AL, AH
 ;;
-CLEAR_SCREEN:
-	;; The simplest way to clear the screen in this context is to simply
-	;; reset the screen resolution.
-	mov 	ah, 0x00	; Tell BIOS we want to set video mode
-	mov	al, 0x03	; Tell BIOS we want 80x25
-	int	0x10		; Set video mode
-	ret
+;CLEAR_SCREEN:
+;	;; The simplest way to clear the screen in this context is to simply
+;	;; reset the screen resolution.
+;	mov 	ah, 0x00	; Tell BIOS we want to set video mode
+;	mov	al, 0x03	; Tell BIOS we want 80x25
+;	int	0x10		; Set video mode
+;	ret
 

@@ -21,9 +21,13 @@ gen_image() {
 	# it's own image file, since most tools expect the partitions to be represented as a seperate file 
 	# (e.g partition 1 of/dev/sda is /dev/sda1).
 	#
-	# Once the partitions are seperated we can write the boot manager to the main disk, and the MBR to the rootfs disk, then we can
-	# format each with the proper filesystem and begin transferring files. After the files are transferred we need put the individual
-	# partition images back into the main disk image
+	# Once the partitions are seperated we will format the rootfs as ext2. mkfs.ext2 also has a feature that allows us to copy the contents
+	# of a folder into the root directory during the formatting, so we use that to write the contents of tmp/rootfs onto the new partition
+	#
+	# Then we write the bootmgr to the first sector of the entire image, and the MBR to the first sector of the primary partition. Then we
+	# format the EFI system partition and copy the UEFI loaders over.
+	#
+	# Lastly we carefully write the partitions back into the main disk image and cleanup
 
 	# Create 1.5GB disk image (307200 sectors)
 	mkdir -p tmp/rootfs tmp/efi_sys RELEASE
@@ -59,13 +63,6 @@ EOF
 
 
 
-	#######################
-	## Format partitions ##
-	#######################
-	mkdosfs -F 32 tmp/efi_sys.img		# EFI system partition must be some kind of FAT fs
-	mkfs.ext2 tmp/rootfs.img		# Rootfs needs to be EXT2 for now
-
-
 
 
 	################
@@ -74,7 +71,10 @@ EOF
 	echo "Copying files..."
 
 	# Here is where we would run 'make install' for every subproject in the system, then we can transfer the files to the rootfs
-	e2cp tmp/rootfs/* tmp/rootfs.img:/
+	make -C hal/boot/i686-amd64 install
+
+	# We format the partition and copy files onto it in the same go
+	mkfs.ext2 -d tmp/rootfs tmp/rootfs.img
 
 
 
@@ -93,7 +93,8 @@ EOF
 	dd if=hal/boot/i686-amd64/bios/mbr of=tmp/rootfs.img conv=notrunc bs=512 count=1
 
 
-	# Next we copy over the EFI version of 'loader' for efi systems
+	# Next we format the EFI system partition as FAT32 and copy over the UEFI version of 'loader'
+	mkdosfs -F 32 tmp/efi_sys.img
 	# $$ mdir ::/efi/blahblah
        	# $$ mcopy -i tmp/efi_sys.img hal/boot/loader/loaderx64.elf ::/EFI/BOOTx64.EFI
 

@@ -18,13 +18,12 @@ gen_image() {
 	# the new sector counts and partition offsets.
 	#
 	# The process is pretty simple; first we make a disk image so we can partition it as one disk. Then we copy each partition into
-	# it's own image file, since most tools expect the partitions to be represented as a seperate file 
-	# (e.g partition 1 of/dev/sda is /dev/sda1).
+	# it's own image file, since most tools expect the partitions to be represented as a seperate file (e.g partition 1 of/dev/sda is /dev/sda1).
 	#
 	# Once the partitions are seperated we will format the rootfs as ext2. mkfs.ext2 also has a feature that allows us to copy the contents
 	# of a folder into the root directory during the formatting, so we use that to write the contents of tmp/rootfs onto the new partition
 	#
-	# Then we write the bootmgr to the first sector of the entire image, and the MBR to the first sector of the primary partition. Then we
+	# Then we write the bootmanager to the first sector of the entire image, and the preloader to the first sector of the primary partition. Then we
 	# format the EFI system partition and copy the UEFI loaders over.
 	#
 	# Lastly we carefully write the partitions back into the main disk image and cleanup
@@ -85,12 +84,12 @@ EOF
 	########################
 	echo "Installing bootloader..."
 	
-	# First we flash the bootmgr and mbr for legacy BIOS systems, being careful to not overwrite the partition table. We also need to copy
+	# First we flash the bootmanager and preloader for legacy BIOS systems, being careful to not overwrite the partition table. We also need to copy
 	# the magic number to the last two bytes of the first sector. Then we flash the MBR to the first sector of the primary partition (rootfs.img)
-	dd if=hal/boot/i686-amd64/bios/bootmgr of=tmp/hdd.img conv=notrunc bs=1 count=446
-	dd if=hal/boot/i686-amd64/bios/bootmgr of=tmp/hdd.img conv=notrunc bs=1 count=2 skip=510 seek=510
+	dd if=hal/boot/i686-amd64/bios/bootmanager of=tmp/hdd.img conv=notrunc bs=1 count=446
+	dd if=hal/boot/i686-amd64/bios/bootmanager of=tmp/hdd.img conv=notrunc bs=1 count=2 skip=510 seek=510
 
-	dd if=hal/boot/i686-amd64/bios/mbr of=tmp/rootfs.img conv=notrunc bs=512 count=1
+	dd if=hal/boot/i686-amd64/bios/preloader of=tmp/rootfs.img conv=notrunc bs=512 count=1
 
 
 	# Next we format the EFI system partition as FAT32 and copy over the UEFI version of 'loader'
@@ -107,7 +106,7 @@ EOF
 	################################################
 	dd if=tmp/efi_sys.img of=tmp/hdd.img bs=512 seek=2048 count=1048576 conv=notrunc
 	dd if=tmp/rootfs.img of=tmp/hdd.img bs=512 seek=1050624 count=2021343 conv=notrunc
-	mv tmp/hdd.img RELEASE/CHIMERA-RELEASE-0.1.0-HDD.img
+	mv tmp/hdd.img RELEASE/CHIMERA-RELEASE-0.1.0-LIVE-HDD.img
 	rm -Rf tmp
 }
 

@@ -160,6 +160,156 @@ PRINTLN:
 
 
 
+
+;;
+;; Function: 
+;;	ENABLE_A20()
+;;
+;; Purpose: 
+;;	Enables A20 gate
+;;
+;; Arguments: 
+;;	None
+;;
+ENABLE_A20:
+
+	; We are assuming the user is using QEMU so we basically are just making sure
+	; A20 is enabled. If it isn't we just fail. There was no reliable way of disabling
+	; it to try and turn it back on at the time of writing. A20 is enabled if AX = 1.
+	call	check_a20
+	cmp 	ax, 1
+	je 	.done
+	jmp 	.fail
+
+.fail	mov 	si, a20_fail_msg
+	call 	PRINTLN
+	hlt				; Halt CPU. Nothing to do if we dom't have A20...
+
+.done	mov	si, a20_success_msg
+	call	PRINTLN
+	ret				; A20 is enabled, continue on.
+	
+
+;; Function: check_a20 ;;
+;  Purpose: Check if a20 gate sis enabled. Returns 1 in AX if enabled, 0 if not
+;  Arguments: N/A
+check_a20:
+	; Preserve state of these registers before we begin.
+	pushf
+	push	ds
+	push	es
+	push 	di
+	push	si
+
+	; Basically the A20 gate allows memory accesses above 1MB, so we use a 
+	; simple test that sees whether or not the memory wraps around or not when
+	; we write/read something over 1MB
+	xor	ax, ax
+	mov 	es, ax
+	mov	di, 0x0500
+	mov	si, 0x0510
+
+	mov 	al, byte [es:di]
+	push 	ax
+
+	mov 	al, byte [ds:si]
+	push	ax
+
+	mov	byte [es:di], 0x00
+	mov	byte [ds:si], 0xFF
+	
+	cmp	byte [es:di], 0xFF	; Check if memory wraps arround
+
+	; Put things back how they were
+	pop	ax
+	mov	byte [ds:si], al
+
+	pop	ax
+	mov	byte [es:di], al
+	
+	; If it's not enabled, set ax to 0 and leave, otherwise set it to 1
+	mov	ax, 0
+	je	.done
+
+	mov	ax, 1			; If we get here, A20 is enabled :)
+
+.done	pop 	si
+	pop	di
+	pop	es
+	pop	ds
+	popf
+	ret
+
+;; Data Section
+a20_fail_msg:	db "Error: Could not enable A20 gate. Please use QEMU."
+a20_success_msg: db "A20 Gate enabled.", 0
+
+
+
+
+
+
+SETUP_GDT:
+	cli				; Disable interrupts just to be sure
+
+	xor	ax, ax			; ?
+	mov	ds, ax			; ?
+	lgdt	[gdt_desc]		; Load the GDT
+
+	mov	eax, cr0		; Move contents of CR0 into EAX
+	or	eax, 1			; Set bit 0 by making an OR operation with EAX and 1
+	mov	cr0, eax		; Protected mode flag set
+
+	jmp 	CODE_SEG:flush_gdt	; Far jump to protected mode
+
+	ret				; Return to calling function
+
+bits 32					; 32 bits, we are in protected mode :)
+flush_gdt:
+	mov	ax, DATA_SEG		; Update the segment registers!
+	mov	ds, ax
+	mov	ss, ax
+	mov	es, ax
+	mov	fs, ax
+	mov	gs, ax
+
+	mov	ebp, 0x90000		; Setup new stack
+	mov	esp, ebp
+	
+	call	PROTECTED_MODE		; Go back to MBR main code file, this time in 32 bit protected mode
+
+
+
+gdt:					
+gdt_null:				; Null segment descriptor
+	dq 0				; 64 bits containing '0'
+
+gdt_code:				; Code segment descriptor
+	dw 0x0FFFF			; Limit (16 bits)
+	dw 0				; Base address (16 bits)
+	db 0				; Base address (cont.) (8 bits)
+	db 10011010b			; ? (8 bits)
+	db 11001111b			; ? (8 bits)
+	db 0				; ? (8 bits)
+
+gdt_data:				; Data segment descriptor
+	dw 0x0FFFF			; Limit (16 bits)
+	dw 0				; Base address (16 bits)
+	db 0				; Base address (cont.) (8 bits)
+	db 10010010b			; ? (8 bits)
+	db 11001111b			; ? (8 bits)
+	db 0				; Segment base ? (8 bits)
+gdt_end:
+gdt_desc:
+	dw gdt_end - gdt - 1
+	dd gdt
+
+CODE_SEG equ gdt_code - gdt
+DATA_SEG equ gdt_data - gdt
+
+
+
+
 ;;;;;;;;;;;;;;;;;;
 ;; Data Section ;;
 ;;;;;;;;;;;;;;;;;;

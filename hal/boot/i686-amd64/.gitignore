@@ -1,4 +1,5 @@
-mbr/mbr
+bios/preloader
+bios/bootmgr
 *.swp
 *.img
 *.bin

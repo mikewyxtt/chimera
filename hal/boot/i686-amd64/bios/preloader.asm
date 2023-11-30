@@ -192,6 +192,10 @@ MAIN:
 	ADD	EBX, EXT2.INODE_BLOCK_ID_OFFSET					; Offset into the root directory inode to find the block ID
 	MOV	ECX, [ebx]							; Copy the first block ID for the root directory into ECX
 
+
+
+
+
 	;; Read root directory (Block ID * Sectors per Block) + Boot partition offset
 	MOV	AX, [ESP + 8]							; Sectors per logical block
 	MUL	ECX								; product in eax	
@@ -205,9 +209,45 @@ MAIN:
 
 	;; Find /boot/loader
 
+	;; We are going to parse the linked list, it is comprised of the following:
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	;;	Offset		Size			Description					;;
+	;;	0x00		4 bytes			Inode number of file entry			;;
+	;;	0x04		2 bytes			Offset to next entry from start of current	;;
+	;;	0x06		1 byte			Name length					;;
+	;;	0x07		1 byte			File type					;;
+	;;	0x08		0 - 255 bytes		File name					;;
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+	mov	eax, EXT2_ROOT_DIR_ADDR			; Start at 0x0 of the root directory
+	mov	ecx, 0x0				; We will utilize a counter for two reasons: 1) so we know when we have searched the whole directory 2) We can use it to track the offset
 
+.find_boot_dir:						; Begin loop
 
+	cmp	ecx, 0x1000				; Have we or are we going to overrun the bounds of this array ?
+	jae	.file_not_found				; If so, we couldn't find /boot.
+
+	mov	esi, dword [eax + 0x08]			; Copy filename into ebx 
+	cmp	esi, dword 0x746f6f62			; Is this the boot directory??
+	je	.find_loader				; If yes, let's find the loader. Otherwise continue searching.
+
+	add	word ax, [eax + 0x04]			; Advance to next file entry
+	add	word cx, [eax + 0x04]			; Record record length in our counter so we can keep track of how far we've gone
+
+	jmp	.find_boot_dir				; Keep searching until we either find it or run out of entries
+	
+
+.find_loader:
+	mov	eax, 0xcafe
+	jmp $
+
+.file_not_found:
+	mov	eax, 0xFACE
+;	xor	ebx, ebx
+;	xor	esi, esi
+	jmp 	$
+
+.found_loader:
 
 jmp $
 
@@ -310,13 +350,13 @@ PRINTLN:
 
 ;; Strings
 DiskErrorMSG:			DB "DISK READ ERROR", 0x00
-LoaderFilename:		DB "LOADER", 0x00
 
 
 
 ;; Global Variables
-ROOT_PART_OFFSET:		DD 0x00				; Double word to hold the root partition offset that we can use as a reference point to find data within the partition
-
+;BootDirPathname:		DD	0x626f6f74			; EXT2 filenames are NOT 0 terminated strings
+BootDirPathname:		DD	0x746f6f62
+LoaderFilename:			DB	"loader"
 
 ;;
 ;; GPT Data Structures
@@ -349,7 +389,6 @@ EXT2.INODE_BLOCK_ID_OFFSET	EQU	0X28			; (60 bytes): 15 32 bit entries containing
 
 
 ;; Special BIOS stuff ;
-PMBR_PARTITION_TABLE: TIMES 64 	DB 	0x00			; Pad MBR partition table with 0's
 PADDING: TIMES 510 - ($ - $$) 	DB 	0x00			; BIOS expects bootsector to be 512 bytes, so we pad the space between the partition table and the magic number with 0's
 MBR_BOOT_SIGNATURE:		DW 	0xAA55			; Magic number that tells the BIOS this is an executable block of code
 

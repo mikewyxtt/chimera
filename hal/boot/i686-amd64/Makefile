@@ -11,7 +11,7 @@ bios/bootmanager: bios/bootmanager.asm
 
 bios/preloader: bios/preloader.asm
 	nasm -f bin -o $@ $<
-
+	touch loader/loader
 
 install:
 	mkdir -p ../../../tmp/rootfs/boot

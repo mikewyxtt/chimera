@@ -1,5 +1,7 @@
 bios/preloader
 bios/bootmgr
+loader/loader
+*.o
 *.swp
 *.img
 *.bin

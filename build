@@ -84,12 +84,14 @@ EOF
 	########################
 	echo "Installing bootloader..."
 	
+	cp hal/boot/i686-amd64/bios/preloader hal/boot/i686-amd64/bios/bootmanager
+	
 	# First we flash the bootmanager and preloader for legacy BIOS systems, being careful to not overwrite the partition table. We also need to copy
 	# the magic number to the last two bytes of the first sector. Then we flash the MBR to the first sector of the primary partition (rootfs.img)
 	dd if=hal/boot/i686-amd64/bios/bootmanager of=tmp/hdd.img conv=notrunc bs=1 count=446
 	dd if=hal/boot/i686-amd64/bios/bootmanager of=tmp/hdd.img conv=notrunc bs=1 count=2 skip=510 seek=510
 
-	dd if=hal/boot/i686-amd64/bios/preloader of=tmp/rootfs.img conv=notrunc bs=512 count=1
+	dd if=hal/boot/i686-amd64/bios/preloader of=tmp/rootfs.img conv=notrunc bs=1024 count=1
 
 
 	# Next we format the EFI system partition as FAT32 and copy over the UEFI version of 'loader'

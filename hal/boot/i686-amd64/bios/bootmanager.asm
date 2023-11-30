@@ -54,7 +54,7 @@ MAIN:
 	MOV	BX, 0x800					; GPT header will reside in memory at 0x800:0x1000
 	CALL	READ_SECTOR					; Read the GPT header into memory
 
-
+jmp $
 
 	;; Load Partition entries
 	MOV	ESI, [0x800 + GPTHEADER.TABLE_BLOCK] 		; Partition table location is listed in GPT header

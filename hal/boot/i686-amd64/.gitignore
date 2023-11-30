@@ -1,5 +1,5 @@
 bios/preloader
-bios/bootmgr
+bios/bootmanager
 loader/loader
 *.o
 *.swp

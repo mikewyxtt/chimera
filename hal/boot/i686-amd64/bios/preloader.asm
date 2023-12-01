@@ -28,19 +28,22 @@ EXT2_ROOT_DIR_ADDR		EQU	0x6220			; EXT2 Root directory (1 Logical Block ?)
 ;; Execution begins here:
 START:
 	;; Setup the stack
-	cld
+	cli							; stack not setup, not safe yet
+	cld							; string ops inc ?
 	XOR	AX, AX						; Set AX to 0, presumably bc you cant directly assign integers to those registers
 	MOV	DS, AX						; Data segment
 	MOV	ES, AX						; Extra segment
 	MOV	SS, AX						; Stack segment
 	MOV	SP, 0x7C00					; Stack grows downwards from 0x7C00
+	sti							; stack setup, interrupts back on
 
-	MOV	SI, SP
-	MOV	DI, 0x600
-	MOV	CX, 0x100
-	REP	MOVSW
 
-	JMP	MAIN - 0x7C00 + 0x600
+	MOV	SI, SP						; Source index: 	0x7C00
+	MOV	DI, 0x600					; Destination index: 	0x600
+	MOV	CX, 0x100					; Words to copy:	0x100 (512 bytes)
+	REP	MOVSW						; Repeatedly move a single word from SI -> DI until CX reaches 0, effectively copying ourselves to the new address
+
+	JMP	MAIN - 0x7C00 + 0x600				; re-explain this fro bootmgr.asm
 
 MAIN:
 
@@ -140,7 +143,7 @@ MAIN:
 	MOV	ESI, [ESP + 0]					; Put primary partition physical block offset in ESI so we can calculate relative offsets
 	ADD	ESI, EAX					; Since we need the second logical block, we need only seek 1 logical block into the partition (block 2 = 0x01)
 
-	JMP	.DONE_CALULATING
+	JMP	.DONE_CALCULATING
 
 .1KB:	
 	;; NOTE: The following never been tested, so if you have issues involving 1 KiB blocks on EXT2, look here.
@@ -153,7 +156,7 @@ MAIN:
 	ADD	ESI, EAX					; It's the 3rd logical block, so we need to seek 2 logical blocks from 0, we do so by adding 2 times 
 	ADD	ESI, EAX					; ^^
 
-.DONE_CALULATING:
+.DONE_CALCULATING:
 	MOV	AX, [ESP + 8]					; BGDT is 1 block in length (see note above) so we will read n number of sectors
 	MOV	BX, EXT2_BGD_TABLE_ADDR				; We will load the BGD table to the address defined above
 	CALL	READ_SECTORS
@@ -206,60 +209,8 @@ MAIN:
 	CALL	READ_SECTORS
 
 
-
-	;; Find /boot/loader
-
-	;; We are going to parse the linked list, it is comprised of the following:
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	;;	Offset		Size			Description					;;
-	;;	0x00		4 bytes			Inode number of file entry			;;
-	;;	0x04		2 bytes			Offset to next entry from start of current	;;
-	;;	0x06		1 byte			Name length					;;
-	;;	0x07		1 byte			File type					;;
-	;;	0x08		0 - 255 bytes		File name					;;
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-	mov	eax, EXT2_ROOT_DIR_ADDR			; Start at 0x0 of the root directory
-	mov	ecx, 0x0				; We will utilize a counter for two reasons: 1) so we know when we have searched the whole directory 2) We can use it to track the offset
-
-.find_boot_dir:						; Begin loop
-
-	cmp	ecx, 0x1000				; Have we or are we going to overrun the bounds of this array ?
-	jae	.file_not_found				; If so, we couldn't find /boot.
-
-	mov	esi, dword [eax + 0x08]			; Copy filename into ebx 
-	cmp	esi, dword 0x746f6f62			; Is this the boot directory??
-	je	.find_loader				; If yes, let's find the loader. Otherwise continue searching.
-
-	add	word ax, [eax + 0x04]			; Advance to next file entry
-	add	word cx, [eax + 0x04]			; Record record length in our counter so we can keep track of how far we've gone
-
-	jmp	.find_boot_dir				; Keep searching until we either find it or run out of entries
-	
-
-.find_loader:
-	mov	eax, 0xcafe
-	jmp $
-
-.file_not_found:
-	mov	eax, 0xFACE
-;	xor	ebx, ebx
-;	xor	esi, esi
-	jmp 	$
-
-.found_loader:
-
-jmp $
-
-
-	
-
-	;; Before we jump to the loader, we have to set up a basic 32 bit protected mode environment. We will enable the A20
-	;; line which allows us to access memory above 1MB, and load a minimal GDT. This is not the GDT that will be used
-	;; by the operating system; that GDT will be loaded by the loader itself.
-;	CALL 	ENABLE_A20					; Enable A20 line
-;	CALL	SETUP_GDT					; Setup GDT
-	
+	;; We are reaching the end of the 512 byte limit for the first half, jump to the next sector of the bootloader
+	CALL	SECOND_HALF_START
 
 
 
@@ -354,9 +305,8 @@ DiskErrorMSG:			DB "DISK READ ERROR", 0x00
 
 
 ;; Global Variables
-;BootDirPathname:		DD	0x626f6f74			; EXT2 filenames are NOT 0 terminated strings
-BootDirPathname:		DD	0x746f6f62
-LoaderFilename:			DB	"loader"
+BootDirPathname:		DB	"boot"
+;LoaderFilename:			DB	"loader"
 
 ;;
 ;; GPT Data Structures
@@ -403,11 +353,77 @@ MBR_BOOT_SIGNATURE:		DW 	0xAA55			; Magic number that tells the BIOS this is an 
 
 
 SECOND_HALF_START:
-	MOV 	SI, TEST_STR
-	CALL	PRINTLN
-jmp $
 
 
+	;; Find /boot/loader
+
+	;; We are going to parse the linked list, it is comprised of the following:
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	;;	Offset		Size			Description					;;
+	;;	0x00		4 bytes			Inode number of file entry			;;
+	;;	0x04		2 bytes			Offset to next entry from start of current	;;
+	;;	0x06		1 byte			Name length					;;
+	;;	0x07		1 byte			File type					;;
+	;;	0x08		0 - 255 bytes		File name					;;
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+	MOV	EAX, EXT2_ROOT_DIR_ADDR			; Start at 0x0 of the root directory
+	add	eax, 0x2c
+
+	mov	edx, eax
+
+	mov	esi, eax
+	add	esi, 0x08					; find first name entry
+
+.find_boot_dir:						; Begin loop
+	;; eax:		File entry offset
+	;; cx:		number of bytes in filename
+	;; edx:		start of file entry
+	
+	xor	ecx, ecx					; clear cx
+	mov	cl, byte [edx + 0x06]				; length of filename
+
+	cmp	cx, 0x04					; is the length of the filename the same as the file we are looking for?
+	jne	.next						; if not, skip it
+
+
+	;; load esi and edi up with pointers to string location in memory, then check each one to see if they match
+	;; attempt:	1 2 3 4
+	;; edi: 	b o o t
+	;; esi: 	b o o t
+	mov	dword edi, BootDirPathname			; filename we want, in this case it's the "boot" directory on /
+	mov	dword esi, edx					; 
+	add	esi, 0x08					; put file entry filename in esi
+	mov	cx, 0x04					; run cmpsb 4 times to compare the whole filename
+
+	rep	cmpsb						; compare the filenames
+	je	.find_loader					; file found, continue
+
+	jmp 	.file_not_found
+
+.next	xor	eax, eax					; zero out eax
+	mov	ax, word [edx + 0x04]				; store amount to advance by in ax
+	add	edx, eax					; advance to next file entry
+	jmp	.find_boot_dir					; Keep searching until we either find it or run out of entries
+	
+
+.file_not_found:
+	mov	eax, 0xFACE
+	jmp 	$
+
+.find_loader:
+	mov	eax, 0xFAFA
+	jmp $
+
+
+	
+
+	;; Before we jump to the loader, we have to set up a basic 32 bit protected mode environment. We will enable the A20
+	;; line which allows us to access memory above 1MB, and load a minimal GDT. This is not the GDT that will be used
+	;; by the operating system; that GDT will be loaded by the loader itself.
+;	CALL 	ENABLE_A20					; Enable A20 line
+;	CALL	SETUP_GDT					; Setup GDT
+	
 
 
 

@@ -12,7 +12,7 @@ EXT2_SUPERBLOCK_ADDR		EQU	0x0E00			; EXT2 superblock (1024 bytes), contains cruc
 EXT2_BGD_TABLE_ADDR		EQU	0x1200			; EXT2 Block Descriptor Table (4096? bytes): should be one block, we leave room for 3 4K blocks just in case.
 EXT2_INODE_TABLE_ADDR		EQU	0x4220			; EXT2 Inode Table (128 bytes): There is also an inode table for each block group but as with before, we only need the first one
 EXT2_ROOT_DIR_ADDR		EQU	0x6220			; EXT2 Root directory (1 Logical Block ?)
-
+LOADER_LOAD_ADDR		EQU	0x8000			; Address in memory where we wish to load the loader
 
 
 	JMP	START						; I read somewhere that some machines wont load a bootsector that doesn't start with 
@@ -506,25 +506,50 @@ SECOND_HALF_START:
 	mov	cx, word [esp + 16]				; to seek into the inode table, we need the size of each inode
 	mul	ecx						; caluclate how far to seek into the inode table. eax = (inode number * inode size)   eax = (eax * ecx)
 
-	add	eax, EXT2_INODE_TABLE_ADDR			; add the inode number to the inode table address, relative offset to /boot's inode
+
+	add	eax, EXT2_INODE_TABLE_ADDR			; add the inode number to the inode table address, relative offset to /boot/loaders's inode
 	add	eax, 0x28					; i_blocks offset
-	mov	edx, dword [eax]				; get the first block number
-	mov	eax, edx					; copy first block number into eax
+;	xor	edi, edi
+	mov	edi, LOADER_LOAD_ADDR
+
+.read_blocks:
+	mov	ebx, eax					; preserve eax by storing it in ebx which we don't use
+
+	mov	edx, dword [eax]				; get the block number
+	mov	eax, edx					; copy block number into eax
+
+	cmp	eax, 0x00					; last block ?
+	je	.done_reading_blocks
 
 	mov	ecx, dword [esp + 8]				; physical sectors per logical block
 	mul	ecx						; result in eax
 
 	add	eax, [esp + 0]					; First data block of /boot/loader + primary partition offset
-
 	mov	esi, eax					; copy ^ into esi so we can read the directory entry into memory
-	mov	bx, EXT2_ROOT_DIR_ADDR				; we will load the boot directory entry overtop of the 
+	 
 	mov	ax, [esp + 8]					; we want to load one full logical block
+	push	ebx						; preserve ebx
+	mov	bx, di						; we will load the boot directory entry overtop of the
 	mov	dl, 0x80					; primary hdd is 0x80. NOTE: !!REMOVE THIS FOR PRODUCTION CODE!!
 	call	READ_SECTORS
 
+	pop	ebx						; restore ebx, inode block offset
+	mov	eax, ebx					; restore eax
+	add	eax, 0x04					; iterate to next date block entry
+	add	di, 0x1000					; advance memory by one logical block
+
+	jmp	.read_blocks					; loop, read next block
 
 
-jmp $
+
+
+.done_reading_blocks:
+	mov	eax, 0xfaaf
+	mov	edx, eax
+
+	jmp	0x0000:0x8000					; jump to bootloader
+
+	jmp $
 
 	
 
@@ -701,5 +726,4 @@ BITS 16
 
 
 
-TEST_STR:			DB	"HELLO SECOND HALF", 0x00
 TIMES 1024 - ($ -$$) 		DB 	0x00			; This entire bootloader combined cannot be more that 1024

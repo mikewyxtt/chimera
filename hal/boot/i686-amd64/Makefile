@@ -1,5 +1,6 @@
-TARGETS:= bios/bootmanager \
-	  bios/preloader
+TARGETS:= 	bios/bootmanager \
+	  	bios/preloader \
+		loader/loader
 
 .PHONY: all clean install
 all: $(TARGETS)
@@ -11,7 +12,9 @@ bios/bootmanager: bios/bootmanager.asm
 
 bios/preloader: bios/preloader.asm
 	nasm -f bin -o $@ $<
-	touch loader/loader
+
+loader/loader: loader/loader.asm
+	nasm -f bin -o $@ $<
 
 install:
 	mkdir -p ../../../tmp/rootfs/boot

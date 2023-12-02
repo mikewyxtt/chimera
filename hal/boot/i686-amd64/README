@@ -1,15 +1,16 @@
 Directory structure explained
 -------------------------------------
 
-mbr: 
-Master boot record. exists soley to establish a protected mode environment and load the loader into memory
+PC's have two types of firmware, legacy BIOS and UEFI. The loader code is the same for both types of firmware, with the low level mechanics of the firmware abstracted behind a library.
+
+bios: 
+BIOS specific code. Contains loader libraries, a boot manager (master boot record) and a "preloader" which resides in the first 2 sectors of the primary partition.
+The preloader exists soley to establish a protected mode environment and load "loader" into memory.
+
+uefi:
+UEFI specific code. Contains loader libraries and startup code to initialize environment
 
 loader:
 Basic bootloader. Finds and loads booster, kernel the servers
 
-booster:
-Functions similar to a rocket booster. Initializes the system and gets the essential servers and drivers
-to a usable state, then passes control to the kernel and gives it information regarding where everything is.
 
-The kernel will then initialize itself and send a signal to the servers and drivers letting them know they
-can operate normally.

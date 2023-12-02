@@ -544,36 +544,13 @@ SECOND_HALF_START:
 
 
 .done_reading_blocks:
-	mov	eax, 0xfaaf
-	mov	edx, eax
-
-	jmp	0x0000:0x8000					; jump to bootloader
-
-	jmp $
-
-	
 
 	;; Before we jump to the loader, we have to set up a basic 32 bit protected mode environment. We will enable the A20
 	;; line which allows us to access memory above 1MB, and load a minimal GDT. This is not the GDT that will be used
 	;; by the operating system; that GDT will be loaded by the loader itself.
-;	CALL 	ENABLE_A20					; Enable A20 line
-;	CALL	SETUP_GDT					; Setup GDT
-	
 
 
-
-
-;;
-;; Function: 
-;;	ENABLE_A20()
-;;
-;; Purpose: 
-;;	Enables A20 gate
-;;
-;; Arguments: 
-;;	None
-;;
-ENABLE_A20:
+.enable_a20:
 
 	; We are assuming the user is using QEMU so we basically are just making sure
 	; A20 is enabled. If it isn't we just fail. There was no reliable way of disabling
@@ -636,45 +613,38 @@ check_a20:
 	pop	es
 	pop	ds
 	popf
-	ret
-
-;; Data Section
-;a20_fail_msg:	db "Error: Could not enable A20 gate. Please use QEMU."
-;a20_success_msg: db "A20 Gate enabled.", 0
 
 
 
+;; Now we can setup the gdt 
 
-
-
-SETUP_GDT:
+.setup_gdt:
 	cli				; Disable interrupts just to be sure
 
-	xor	ax, ax			; ?
-	mov	ds, ax			; ?
+	xor	ax, ax			; zero out ax
+	mov	ds, ax			; zero out data segment
 	lgdt	[gdt_desc]		; Load the GDT
 
 	mov	eax, cr0		; Move contents of CR0 into EAX
 	or	eax, 1			; Set bit 0 by making an OR operation with EAX and 1
 	mov	cr0, eax		; Protected mode flag set
 
-	jmp 	CODE_SEG:flush_gdt	; Far jump to protected mode
+	jmp 	CODE_SEG:flush_gdt	; Far jump to protected mode, this sets CS
 
-	ret				; Return to calling function
 
 bits 32					; 32 bits, we are in protected mode :)
 flush_gdt:
 	mov	ax, DATA_SEG		; Update the segment registers!
-	mov	ds, ax
-	mov	ss, ax
-	mov	es, ax
-	mov	fs, ax
-	mov	gs, ax
+	mov	ds, ax			; data segment
+	mov	ss, ax			; stack segment
+	mov	es, ax			; extra segment
+	mov	fs, ax			; ?
+	mov	gs, ax			; ?
 
 	mov	ebp, 0x90000		; Setup new stack
 	mov	esp, ebp
 	
-	call	PROTECTED_MODE		; Go back to MBR main code file, this time in 32 bit protected mode
+	jmp	PROTECTED_MODE		; jmp over the gdt data structure, we are now fully protected mode
 
 
 
@@ -705,23 +675,19 @@ gdt_desc:
 CODE_SEG 		equ 	gdt_code - gdt
 DATA_SEG 		equ 	gdt_data - gdt
 
-bits 16
 
 
-;;
-;; FUNCTION:
-;;	PROTECTED_MODE()
-;; PURPOSE:
-;; 	SETUP_GDT() returns here. We are now in protected mode and can finish up by jumping to the loader
-;;
+
+;; From this point forward, we are in 32 bit protected mode.
 BITS 32
 PROTECTED_MODE:
-	HLT
+
+	;; now we can jump to the loader. we don't need to do segment:offset anymore bc we are in 32 bit mode so we can just call the address as one long 32 bit one?
+	jmp	LOADER_LOAD_ADDR
+
+	jmp $							; infinite loop, we should never get here
 
 
-
-
-BITS 16
 
 
 

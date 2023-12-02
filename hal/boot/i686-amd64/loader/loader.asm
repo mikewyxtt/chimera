@@ -1,18 +1,33 @@
 org 0x8000
-bits 16
+bits 32
 
+jmp	start
 
 start:
-	mov	si, HELLOSTR
-	mov	ah, 0x0E
+	call	CLEAR
 
-.loop	lodsb
-	or	al, al
-	jz	.done
-	int	0x10
-	jmp	.loop
+	mov	byte [0xb8000], 'y'
+	mov	byte [0xb8002], 'o'
+	mov	byte [0xb8004], 'o'
+	mov	byte [0xb8006], 'o'
 
-.done	jmp $
+jmp $
+
+
+
+CLEAR:
+	mov	ecx, 2000			; 80 * 25
+	xor	eax, eax
+
+.loop	mov 	byte [0xb8000 + eax], ' '	; fill with spaces
+	add	eax, 0x02			; each character entry is 2 bytes
+	loop	.loop				; loop through each char in vram
+
+.done	mov	byte [cursor_pos], 0		; reset the cursor
+	ret					; return to caller
+
+
+cursor_pos	db	0x0
 
 
 HELLOSTR:	db	"HELLOOOO!"

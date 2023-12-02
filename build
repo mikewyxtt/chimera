@@ -5,11 +5,11 @@
 
 
 make_all() {
-    	make all -C $1
+    	make all -C $1 --no-print-directory
 }
 
 make_clean() {
-    	make clean -C $1
+    	make clean -C $1 --no-print-directory
 }
 
 gen_image() {
@@ -70,7 +70,7 @@ EOF
 	echo "Copying files..."
 
 	# Here is where we would run 'make install' for every subproject in the system, then we can transfer the files to the rootfs
-	make -C hal/boot/i686-amd64 install
+	make -C hal/boot/i686-amd64 install --no-print-directory
 
 	# We format the partition and copy files onto it in the same go
 	mkfs.ext2 -d tmp/rootfs tmp/rootfs.img
@@ -114,7 +114,6 @@ EOF
 
 
 echo "Building HAL..."
-make_clean "hal/boot/i686-amd64"
 make_all "hal/boot/i686-amd64"
 
 echo "Generating image..."

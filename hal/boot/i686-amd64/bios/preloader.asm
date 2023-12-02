@@ -49,12 +49,12 @@ MAIN:
 
 	;; Stack variables
 
-	PUSH	DWORD	0x00		; [ESP + 18]	?
-	PUSH	WORD	0x100		; [ESP + 16]	Inode size
-	PUSH	DWORD	0x00000000	; [ESP + 12]	Inode table starting offset
-	PUSH	DWORD 	8		; [ESP + 8 ]	Physical sectors per logical block
-	PUSH	DWORD 	4096		; [ESP + 4 ]	ext2 logical block size
-	PUSH	DWORD 	0x00000000	; [ESP + 0 ]	Primary partition physical block offset
+	PUSH	DWORD	0x00					; [ESP + 18]	?
+	PUSH	WORD	0x100					; [ESP + 16]	Inode size
+	PUSH	DWORD	0x00000000				; [ESP + 12]	Inode table starting offset
+	PUSH	DWORD 	8					; [ESP + 8 ]	Physical sectors per logical block
+	PUSH	DWORD 	4096					; [ESP + 4 ]	ext2 logical block size
+	PUSH	DWORD 	0x00000000				; [ESP + 0 ]	Primary partition physical block offset
 
 
 
@@ -98,20 +98,20 @@ MAIN:
 
 
 	;; Read second half of the preloader into memory
-	MOV	DWORD ESI, [ESP + 0]					; Copy physical starting block of boot partition in ESI so we can make relative offsets
-	ADD	ESI, 0x01						; Second half is located immediately after the first half on disk, so one sector from 0
-	MOV	BX, 0x800						; First half is at 0x600, takes up 512 bytes (0x200) so we read it to 0x800
-	MOV	AX, 0x01						; We only want to read one sector
+	MOV	DWORD ESI, [ESP + 0]				; Copy physical starting block of boot partition in ESI so we can make relative offsets
+	ADD	ESI, 0x01					; Second half is located immediately after the first half on disk, so one sector from 0
+	MOV	BX, 0x800					; First half is at 0x600, takes up 512 bytes (0x200) so we read it to 0x800
+	MOV	AX, 0x01					; We only want to read one sector
 	CALL	READ_SECTORS
 
 
 
 
 	;; Read EXT2 superblock
-	MOV	DWORD ESI, [ESP + 0]					; Copy physical starting block of boot partition so we can make relative offsets
-	ADD	ESI, 0x02						; We need the third and fourth blocks (first two blocks reserved for bootloader code)
-	MOV	AX, 0x02						; Load two sectors (Superblock is 1024 bytes)
-	MOV	BX, EXT2_SUPERBLOCK_ADDR				; Read it into the memory address set at the top of this file
+	MOV	DWORD ESI, [ESP + 0]				; Copy physical starting block of boot partition so we can make relative offsets
+	ADD	ESI, 0x02					; We need the third and fourth blocks (first two blocks reserved for bootloader code)
+	MOV	AX, 0x02					; Load two sectors (Superblock is 1024 bytes)
+	MOV	BX, EXT2_SUPERBLOCK_ADDR			; Read it into the memory address set at the top of this file
 	CALL	READ_SECTORS
 
 
@@ -201,12 +201,12 @@ MAIN:
 
 
 	;; Read root directory (Block ID * Sectors per Block) + Boot partition offset
-	MOV	AX, [ESP + 8]							; Sectors per logical block
-	MUL	ECX								; product in eax	
-	MOV	ESI, [ESP + 0]							; Boot partition offset
-	ADD	ESI, EAX							; Relative to absolute conversion
-	MOV	AX, [ESP + 8]							; We want to read one entire block
-	MOV	BX, EXT2_ROOT_DIR_ADDR						; Read the root directory into memory
+	MOV	AX, [ESP + 8]					; Sectors per logical block
+	MUL	ECX						; product in eax	
+	MOV	ESI, [ESP + 0]					; Boot partition offset
+	ADD	ESI, EAX					; Relative to absolute conversion
+	MOV	AX, [ESP + 8]					; We want to read one entire block
+	MOV	BX, EXT2_ROOT_DIR_ADDR				; Read the root directory into memory
 	CALL	READ_SECTORS
 
 jmp SECOND_HALF_START
@@ -560,9 +560,9 @@ SECOND_HALF_START:
 	je 	.done
 	jmp 	.fail
 
-.fail	hlt				; Halt CPU. Nothing to do if we dom't have A20...
-
-.done	ret				; A20 is enabled, continue on.
+.fail	hlt							; Halt CPU. Nothing to do if we dom't have A20...
+	
+.done	ret							; A20 is enabled, continue on.
 	
 
 ;; Function: check_a20 ;;
@@ -593,7 +593,7 @@ check_a20:
 	mov	byte [es:di], 0x00
 	mov	byte [ds:si], 0xFF
 	
-	cmp	byte [es:di], 0xFF	; Check if memory wraps arround
+	cmp	byte [es:di], 0xFF				; Check if memory wraps arround
 
 	; Put things back how they were
 	pop	ax
@@ -606,7 +606,7 @@ check_a20:
 	mov	ax, 0
 	je	.done
 
-	mov	ax, 1			; If we get here, A20 is enabled :)
+	mov	ax, 1						; If we get here, A20 is enabled :)
 
 .done	pop 	si
 	pop	di
@@ -619,54 +619,54 @@ check_a20:
 ;; Now we can setup the gdt 
 
 .setup_gdt:
-	cli				; Disable interrupts just to be sure
+	cli							; Disable interrupts just to be sure
 
-	xor	ax, ax			; zero out ax
-	mov	ds, ax			; zero out data segment
-	lgdt	[gdt_desc]		; Load the GDT
+	xor	ax, ax						; zero out ax
+	mov	ds, ax						; zero out data segment
+	lgdt	[gdt_desc]					; Load the GDT
 
-	mov	eax, cr0		; Move contents of CR0 into EAX
-	or	eax, 1			; Set bit 0 by making an OR operation with EAX and 1
-	mov	cr0, eax		; Protected mode flag set
+	mov	eax, cr0					; Move contents of CR0 into EAX
+	or	eax, 1						; Set bit 0 by making an OR operation with EAX and 1
+	mov	cr0, eax					; Protected mode flag set
 
-	jmp 	CODE_SEG:flush_gdt	; Far jump to protected mode, this sets CS
+	jmp 	CODE_SEG:flush_gdt				; Far jump to protected mode, this sets CS
 
 
-bits 32					; 32 bits, we are in protected mode :)
+bits 32								; 32 bits, we are in protected mode :)
 flush_gdt:
-	mov	ax, DATA_SEG		; Update the segment registers!
-	mov	ds, ax			; data segment
-	mov	ss, ax			; stack segment
-	mov	es, ax			; extra segment
-	mov	fs, ax			; ?
-	mov	gs, ax			; ?
+	mov	ax, DATA_SEG					; Update the segment registers!
+	mov	ds, ax						; data segment
+	mov	ss, ax						; stack segment
+	mov	es, ax						; extra segment
+	mov	fs, ax						; ?
+	mov	gs, ax						; ?
 
-	mov	ebp, 0x90000		; Setup new stack
+	mov	ebp, 0x90000					; Setup new stack
 	mov	esp, ebp
 	
-	jmp	PROTECTED_MODE		; jmp over the gdt data structure, we are now fully protected mode
+	jmp	PROTECTED_MODE					; jmp over the gdt data structure, we are now fully protected mode
 
 
 
 gdt:					
-gdt_null:				; Null segment descriptor
-	dq 0				; 64 bits containing '0'
+gdt_null:							; Null segment descriptor
+	dq 0							; 64 bits containing '0'
 
-gdt_code:				; Code segment descriptor
-	dw 0x0FFFF			; Limit (16 bits)
-	dw 0				; Base address (16 bits)
-	db 0				; Base address (cont.) (8 bits)
-	db 10011010b			; ? (8 bits)
-	db 11001111b			; ? (8 bits)
-	db 0				; ? (8 bits)
+gdt_code:							; Code segment descriptor
+	dw 0x0FFFF						; Limit (16 bits)
+	dw 0							; Base address (16 bits)
+	db 0							; Base address (cont.) (8 bits)
+	db 10011010b						; ? (8 bits)
+	db 11001111b						; ? (8 bits)
+	db 0							; ? (8 bits)
 
-gdt_data:				; Data segment descriptor
-	dw 0x0FFFF			; Limit (16 bits)
-	dw 0				; Base address (16 bits)
-	db 0				; Base address (cont.) (8 bits)
-	db 10010010b			; ? (8 bits)
-	db 11001111b			; ? (8 bits)
-	db 0				; Segment base ? (8 bits)
+gdt_data:							; Data segment descriptor
+	dw 0x0FFFF						; Limit (16 bits)
+	dw 0							; Base address (16 bits)
+	db 0							; Base address (cont.) (8 bits)
+	db 10010010b						; ? (8 bits)
+	db 11001111b						; ? (8 bits)
+	db 0							; Segment base ? (8 bits)
 gdt_end:
 gdt_desc:
 	dw gdt_end - gdt - 1

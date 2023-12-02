@@ -1,4 +1,4 @@
-ORG 0x600							; Address in memory where  BIOS loads us at
+ORG 0x600							; We are loaded in at address 0x7C00, but will relocate here before we call MAIN
 BITS 16								; We start in 16 bit real mode
 
 

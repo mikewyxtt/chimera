@@ -186,6 +186,7 @@ MAIN:
 
 
 
+
 	;; Find root directory
 	;; The root directory is always the 2nd entry in the inode table
 	XOR	EAX, EAX							; Zero EAX bc we are going to go from using AX to EAX, something could be left over
@@ -208,7 +209,7 @@ MAIN:
 	MOV	BX, EXT2_ROOT_DIR_ADDR						; Read the root directory into memory
 	CALL	READ_SECTORS
 
-
+jmp SECOND_HALF_START
 	;; We are reaching the end of the 512 byte limit for the first half, jump to the next sector of the bootloader
 	CALL	SECOND_HALF_START
 
@@ -305,9 +306,13 @@ DiskErrorMSG:			DB "DISK READ ERROR", 0x00
 
 
 ;; Global Variables
-BootDirPathname:		DB	"boot"
-;LoaderFilename:			DB	"loader"
 
+;; the code to find /boot/loader is quite primitive, we literally just compare strings for "boot" and "loader"
+BootDirPathname:		DB	"boot"			; Pathname to the bootloader
+BootDirPathname.length		EQU	0x04			; Length of BootDirPath string in bytes 
+
+LoaderFilename:			DB	"loader"		; Filename for the final stage of the BIOS bootloader
+LoaderFilename.length		EQU	0x06			; Length of LoaderFilename string in bytes
 ;;
 ;; GPT Data Structures
 ;;
@@ -355,6 +360,8 @@ MBR_BOOT_SIGNATURE:		DW 	0xAA55			; Magic number that tells the BIOS this is an 
 SECOND_HALF_START:
 
 
+
+
 	;; Find /boot/loader
 
 	;; We are going to parse the linked list, it is comprised of the following:
@@ -367,37 +374,37 @@ SECOND_HALF_START:
 	;;	0x08		0 - 255 bytes		File name					;;
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	MOV	EAX, EXT2_ROOT_DIR_ADDR			; Start at 0x0 of the root directory
-	add	eax, 0x2c
+	MOV	EDX, EXT2_ROOT_DIR_ADDR				; Start at 0x0 of the root directory
 
-	mov	edx, eax
-
-	mov	esi, eax
+	mov	esi, edx					; copy root directory starting address into esi so we can do a relative offset to find the filename string
 	add	esi, 0x08					; find first name entry
 
-.find_boot_dir:						; Begin loop
+.find_boot_dir:							; Begin loop
 	;; eax:		File entry offset
 	;; cx:		number of bytes in filename
-	;; edx:		start of file entry
-	
-	xor	ecx, ecx					; clear cx
-	mov	cl, byte [edx + 0x06]				; length of filename
+	;; edx:		start of file entry, (will contain the absolute address to the file entry in memory when the file is found)
 
-	cmp	cx, 0x04					; is the length of the filename the same as the file we are looking for?
+
+	cmp	edx, 0x7220					; have we read every entry ?
+	jge	.file_not_found					; if we have, the file doesn't exist
+
+	mov	cl, byte [edx + 0x06]				; length of filename string we are checking
+	cmp	cl, BootDirPathname.length			; is the length of the filename string the same as the filename string  we are looking for?
 	jne	.next						; if not, skip it
 
 
 	;; load esi and edi up with pointers to string location in memory, then check each one to see if they match
-	;; attempt:	1 2 3 4
-	;; edi: 	b o o t
-	;; esi: 	b o o t
-	mov	dword edi, BootDirPathname			; filename we want, in this case it's the "boot" directory on /
-	mov	dword esi, edx					; 
-	add	esi, 0x08					; put file entry filename in esi
-	mov	cx, 0x04					; run cmpsb 4 times to compare the whole filename
+	;; cx:		4 3 2 1					; CX is the counter, cmpsb will decrease it by 1 every time it runs
+	;; edi: 	b o o t					; filename we are searching for
+	;; esi: 	b o o t					; filename we are checking, ideally this would be "boot"
 
-	rep	cmpsb						; compare the filenames
-	je	.find_loader					; file found, continue
+	mov	edi, BootDirPathname				; filename we want, in this case it's the "boot" directory on /
+	mov	esi, edx					; starting offset of the filename entry we are checking, copy to esi so we can offset in and get the filename
+	add	esi, 0x08					; put file entry filename in esi
+	mov	ecx, 0x04					; set counter; we need to run cmpsb 4 times to compare the whole filename
+
+	rep	cmpsb						; compare the filenames one byte at a time
+	je	.read_boot_dir					; if the strings are identical we found the file. continue
 
 	jmp 	.file_not_found
 
@@ -411,10 +418,113 @@ SECOND_HALF_START:
 	mov	eax, 0xFACE
 	jmp 	$
 
-.find_loader:
-	mov	eax, 0xFAFA
-	jmp $
 
+;; Now the we've found /boot, we need to find the loader itself. The process is the same, we could probably turn this into a function to save some space if we needed.
+.read_boot_dir:
+	xor	ecx, ecx					; zero out ecx just in case
+
+	mov	eax, dword [edx]				; the inode number for /boot directory entry is stored in edx, it's 4 bytes long (32 bits)
+	sub 	eax, 1 						; inode numbers start at 1, not 0. we need to compensate for this by adding 1
+	mov	cx, word [esp + 16]				; to seek into the inode table, we need the size of each inode
+	mul	ecx						; caluclate how far to seek into the inode table. eax = (inode number * inode size)   eax = (eax * ecx)
+
+	add	eax, EXT2_INODE_TABLE_ADDR			; add the inode number to the inode table address, relative offset to /boot's inode
+	add	eax, 0x28					; i_blocks offset
+	mov	edx, dword [eax]				; get the first block number
+	mov	eax, edx					; copy first block number into eax
+
+	mov	ecx, dword [esp + 8]				; physical sectors per logical block
+	mul	ecx
+
+	add	eax, [esp + 0]					; First block of /boot + primary partition offset
+	mov	esi, eax					; copy ^ into esi so we can read the directory entry into memory
+	mov	bx, EXT2_ROOT_DIR_ADDR				; we will load the boot directory entry overtop of the 
+	mov	ax, [esp + 8]					; we want to load one full logical block
+	mov	dl, 0x80					; primary hdd is 0x80. NOTE: !!REMOVE THIS FOR PRODUCTION CODE!!
+	call	READ_SECTORS
+
+
+
+;; find loader
+;; here starts copied file read func..
+	MOV	EDX, EXT2_ROOT_DIR_ADDR				; Start at 0x0 of the root directory
+
+	mov	esi, edx					; copy root directory starting address into esi so we can do a relative offset to find the filename string
+	add	esi, 0x08					; find first name entry
+
+.find_loader:							; Begin loop
+	;; eax:		File entry offset
+	;; cx:		number of bytes in filename
+	;; edx:		start of file entry, (will contain the absolute address to the file entry in memory when the file is found)
+
+
+	cmp	edx, 0x7220					; have we read every entry ?
+	jge	.file_not_found1				; if we have, the file doesn't exist
+
+	mov	cl, byte [edx + 0x06]				; length of filename string we are checking
+	cmp	cl, LoaderFilename.length			; is the length of the filename string the same as the filename string  we are looking for?
+	jne	.next1						; if not, skip it
+
+
+	;; load esi and edi up with pointers to string location in memory, then check each one to see if they match
+	;; cx:		4 3 2 1					; CX is the counter, cmpsb will decrease it by 1 every time it runs
+	;; edi: 	b o o t					; filename we are searching for
+	;; esi: 	b o o t					; filename we are checking, ideally this would be "boot"
+
+	mov	edi, LoaderFilename				; filename we want, in this case it's the "boot" directory on /
+	mov	esi, edx					; starting offset of the filename entry we are checking, copy to esi so we can offset in and get the filename
+	add	esi, 0x08					; put file entry filename in esi
+	mov	ecx, 0x04					; set counter; we need to run cmpsb 4 times to compare the whole filename
+
+	rep	cmpsb						; compare the filenames one byte at a time
+	je	.read_loader					; if the strings are identical we found the file. continue
+
+	jmp 	.file_not_found1
+
+.next1	xor	eax, eax					; zero out eax
+	mov	ax, word [edx + 0x04]				; store amount to advance by in ax
+	add	edx, eax					; advance to next file entry
+	jmp	.find_loader					; Keep searching until we either find it or run out of entries
+	
+
+.file_not_found1:
+	mov	eax, 0xFACE
+	jmp 	$
+
+
+;;;;;!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+;;;;;!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+;; Now the we've found /boot/loader! All that's left is to read it into memory, then we can setup a basic 32 bit environment and do a far jmp to the loader
+.read_loader:
+	xor	ecx, ecx					; zero out ecx just in case
+
+	mov	eax, dword [edx]				; the inode number for /boot/loader directory entry is stored in edx, it's 4 bytes long (32 bits)
+	sub 	eax, 1						; inode numbers start at 1, not 0. comepensate by subtracting 1
+	mov	cx, word [esp + 16]				; to seek into the inode table, we need the size of each inode
+	mul	ecx						; caluclate how far to seek into the inode table. eax = (inode number * inode size)   eax = (eax * ecx)
+
+	add	eax, EXT2_INODE_TABLE_ADDR			; add the inode number to the inode table address, relative offset to /boot's inode
+	add	eax, 0x28					; i_blocks offset
+	mov	edx, dword [eax]				; get the first block number
+	mov	eax, edx					; copy first block number into eax
+
+	mov	ecx, dword [esp + 8]				; physical sectors per logical block
+	mul	ecx						; result in eax
+
+	add	eax, [esp + 0]					; First data block of /boot/loader + primary partition offset
+
+	mov	esi, eax					; copy ^ into esi so we can read the directory entry into memory
+	mov	bx, EXT2_ROOT_DIR_ADDR				; we will load the boot directory entry overtop of the 
+	mov	ax, [esp + 8]					; we want to load one full logical block
+	mov	dl, 0x80					; primary hdd is 0x80. NOTE: !!REMOVE THIS FOR PRODUCTION CODE!!
+	call	READ_SECTORS
+
+
+
+jmp $
 
 	
 

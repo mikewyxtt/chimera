@@ -638,8 +638,8 @@ flush_gdt:
 	mov	ds, ax						; data segment
 	mov	ss, ax						; stack segment
 	mov	es, ax						; extra segment
-	mov	fs, ax						; ?
-	mov	gs, ax						; ?
+	mov	fs, ax						; extra segment
+	mov	gs, ax						; extra segment
 
 	mov	ebp, 0x90000					; Setup new stack
 	mov	esp, ebp
@@ -647,33 +647,79 @@ flush_gdt:
 	jmp	PROTECTED_MODE					; jmp over the gdt data structure, we are now fully protected mode
 
 
-
+; Global Descriptor Table
+; Refer to Volume 3A, Ch. 5, Pg. 2 of the "Intel System Programmers Manual" for more information
 gdt:					
+
 gdt_null:							; Null segment descriptor
-	dq 0							; 64 bits containing '0'
+	; Entire Descriptor should be 0 (Bits 0 - 63)
+	dq 0x00
 
 gdt_code:							; Code segment descriptor
-	dw 0x0FFFF						; Limit (16 bits)
-	dw 0							; Base address (16 bits)
-	db 0							; Base address (cont.) (8 bits)
-	db 10011010b						; ? (8 bits)
-	db 11001111b						; ? (8 bits)
-	db 0							; ? (8 bits)
+	; Segment Limit (Bits 0 - 15)
+	dw 0x0FFFF
+
+	; Base Address (Bits 0 - 15)
+	dw 0x00
+
+	; Base Address (Bits 16 - 23)
+	db 00000000b
+
+	; Fields and Flags
+	; ----------------------
+	; | 0 | 00  | 0 | 0000 | 
+	; | P | DPL | S | *CRA | *Bit 4 of the TYPE field is always 1 for code segment descriptors	
+	; |   |     |   | TYPE |
+	; ----------------------
+	db 10011010b
+
+	; Fields and Flags
+	; ---------------------------------------------------------
+	; | 0 | 0 |    0     |  0  |            0000              |
+	; | G | B | RESERVED | AVL | Segment Limit (Bits 16 - 19) |
+	; ---------------------------------------------------------
+	db 11001111b
+
+
+	; Base Address (Bits 24 - 31)
+	db 0x00
+
 
 gdt_data:							; Data segment descriptor
-	dw 0x0FFFF						; Limit (16 bits)
-	dw 0							; Base address (16 bits)
-	db 0							; Base address (cont.) (8 bits)
-	db 10010010b						; ? (8 bits)
-	db 11001111b						; ? (8 bits)
-	db 0							; Segment base ? (8 bits)
+	; Segment Limit (Bits 0 - 15)
+	dw 0x0FFFF
+
+	; Base Address (Bits 0 - 15)
+	dw 0x00
+	
+	; Base Address (Bits 16 - 23)
+	db 0x00					
+
+	; Fields and Flags
+	; ----------------------
+	; | 0 | 00  | 0 | 0000 |
+	; | P | DPL | S | *EWA | *Bit 4 of the TYPE field is always 0 for data segment descriptors	
+	;		| TYPE |
+	; ----------------------
+	db 10010010b	
+
+	; Fields and Flags
+	; ---------------------------------------------------------
+	; | 0 | 0 |    0     |  0  |            0000              |
+	; | G | B | RESERVED | AVL | Segment Limit (Bits 16 - 19) |
+	; ---------------------------------------------------------
+	db 11001111b
+
+	; Base Address (Bits 24 - 31)
+	db 0x00
 gdt_end:
-gdt_desc:
+
+gdt_desc:									; Pointer to GDT in memory (e.g. if we are loaded at 0x600 and the GDT was 0x100 into this file, we load 0x700 into the GDT register)
 	dw gdt_end - gdt - 1
 	dd gdt
 
-CODE_SEG 		equ 	gdt_code - gdt
-DATA_SEG 		equ 	gdt_data - gdt
+CODE_SEG 		equ 	gdt_code - gdt					; Calculate relative offset of the code segment (e.g. if the GDT was at 0x100 and code segment descriptor was at 0x150, offset would be 0x50) 
+DATA_SEG 		equ 	gdt_data - gdt					; Calculate relative offset of the data segment
 
 
 
@@ -692,4 +738,4 @@ PROTECTED_MODE:
 
 
 
-TIMES 1024 - ($ -$$) 		DB 	0x00			; This entire bootloader combined cannot be more that 1024
+TIMES 1024 - ($ -$$) 		DB 	0x00			; This entire bootloader combined cannot be more than 1024 bytes (per EXT2 specification)

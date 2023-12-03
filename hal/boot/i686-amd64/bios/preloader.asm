@@ -29,6 +29,9 @@ BITS 	16							; We start in 16 bit real mode
 ;;
 ;; 8) The address that was chosen for the stack pointer  during the GDT setup is completely random. Might make more sense to base it off of something that makes sense, like the LOAD_LOADER_ADDR or something.
 ;;
+;; 9) When this is first loaded, the drive number is in register DL. THIS value should be placed back into DL when making INT 13 calls (disk reads) to the BIOS. Currently, we hardcoded 0x80 (primary hard disk) as the value.
+;;	This is obviously not ideal for production code as we can't guarantee we were loaded from a hard disk. So, the value in DL needs to be stored somewhere safe and restored to DL before the READ_SECTORS calls. This is an easy fix.
+;;
 
 
 

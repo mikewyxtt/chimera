@@ -660,8 +660,14 @@ flush_gdt:
 ;; CODE is the code segment, set to Ring 0 privileges 
 ;; DATA is the data segment, set to Ring 0 privileges
 ;;
+;;
 ;; All of the segments found here and in the final GDT are setup to occupy the entire address space. Reason being that we want to utilize paging to break up the physical memory into virtual memory,
-;; so we don't need segmentation. Setting the GDT up is required and used slightly for privilege checks but beyond that it's essentially useless and only here for compatibilty reasons.
+;; so we don't need segmentation. Setting the GDT up is required and in our case only used so the privilege checks work properly but beyond that it's not used for anything else.
+;;
+;; Something important to understand is the CPU uses the GDT to validate every instruction in multiple ways. One of those is to ensure the privilege level of the segment matches the privilege level
+;; of the instruction you are running. For example, the HLT instruction is privileged. If you attempt to run the HLT instruction with the CPU set to Ring 0, but the segment is set to Ring 3, the CPU
+;; will throw a General Protection Fault. It is for this reason that we need a code/data segment for Ring 0, and a code/data segment for Ring 3.
+;;
 ;;
 ;; Flags and Fields explained:
 ;;

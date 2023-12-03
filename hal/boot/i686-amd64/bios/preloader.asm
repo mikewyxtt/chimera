@@ -1,10 +1,40 @@
-ORG 0x600							; We are loaded in at address 0x7C00, but will relocate here before we call MAIN
-BITS 16								; We start in 16 bit real mode
+ORG 	0x600							; We are loaded in at address 0x7C00, but will relocate here before we call MAIN
+BITS 	16							; We start in 16 bit real mode
+
+;;;;;;;;;;;;;;;;;
+;; Limitations ;;
+;;;;;;;;;;;;;;;;;
+;;
+;; In the future, we should modify the code to fix the following:
+;;
+;; 1) There is no error handling for READ_SECTORS. The system will just hang. Because we are short on size and don't have room for detailed strings, 
+;;	either come up with a system of error codes or just print whatever the BIOS gave back to the display.
+;;
+;; 2) This preloader and the bootmanager make many assumptions that aren't practical for a production bootloader, such as:
+;;	- Requires the partition that holds /boot to be the 2nd partition entry in the partition table. We need to create a magic number specific to this operating system that we can assign to the primary partition
+;;		so we can search for it. This way the user can parititon their disk however they want without breaking the system. Refer to GPT documentation for examples of operating system partition codes.
+;;		Implementation is simple, just iterate through each partition until you find the one with the correct signature, then pass it off to have its Starting LBA read.
+;;
+;; 3) The code to find and read /boot/loader is awful, it needs to be turned into a function. Currently, it finds /boot, reads it into memory, then right after I copy and pasted said code and changed a few registers so it could
+;;	find the loader file within /boot. This should be a function that accepts a full filename as a string, recursively traverses the directories, THEN reads the file into the specified address.
+;;
+;; 4) The constants in the "data structure addresses" box below should all be based off of the ORG value, with the execption of TMP_LOADER_LOAD_ADDR and LOADER_LOAD_ADDR. This is an easy one, just have them add onto eachother one aft;;	er another. e.g. EXTR_SUPERBLOCK_ADDR would be GPT_TABLE_ADDR + 0x100 (512 bytes). Bear in mind, this file once read into memory is 1024 bytes, or 0x400 hex so you need to do ORG + 0x400 for GPT_HEADER_ADDR.
+;;
+;; 5) The code might look cleaner if the main function was broken up into several functions rather than being one long heap of code. You do have to be careful with rearranging this file however because you only have 512 bytes
+;;	for the first half and 512 for the second half. So data and code will have to be moved strategically due to this factor.
+;;
+;; 6) I'm not entirely sure it makes sense to utilize the stack to hold references to the variables, especially if you're implementing the limitation above ^^. Probably makes more sense to define some global variables instead.
+;;
+;; 7) The Disk Address Packet (DAP) used for the READ_SECTORS function doesn't need to be an on disk data structure. Refer to FreeBSD boot0 documentation for more info, but you should be able to push the paramaters onto the stack
+;;
+;; 8) The address that was chosen for the stack pointer  during the GDT setup is completely random. Might make more sense to base it off of something that makes sense, like the LOAD_LOADER_ADDR or something.
+;;
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; DATA STRUCTURE ADRESSES ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; DATA STRUCTURE ADDRESSES ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 GPT_HEADER_ADDR			EQU	0x0A00			; GPT Header (512 bytes), contains crucial information about the disk and its partitions
 GPT_TABLE_ADDR			EQU	0x0C00			; The partition table itself (512 bytes)
 
@@ -12,7 +42,9 @@ EXT2_SUPERBLOCK_ADDR		EQU	0x0E00			; EXT2 superblock (1024 bytes), contains cruc
 EXT2_BGD_TABLE_ADDR		EQU	0x1200			; EXT2 Block Descriptor Table (4096? bytes): should be one block, we leave room for 3 4K blocks just in case.
 EXT2_INODE_TABLE_ADDR		EQU	0x4220			; EXT2 Inode Table (128 bytes): There is also an inode table for each block group but as with before, we only need the first one
 EXT2_ROOT_DIR_ADDR		EQU	0x6220			; EXT2 Root directory (1 Logical Block ?)
-LOADER_LOAD_ADDR		EQU	0x8000			; Address in memory where we wish to load the loader
+
+TMP_LOADER_LOAD_ADDR		EQU	0x8000			; BX register can't hold 0x100000, so we load it here first, then move it to the address below before the jmp
+LOADER_LOAD_ADDR		EQU	0x100000		; Address in memory where we wish to load the loader. 1MiB(0x100000) is the beginning of extended memory, and a nice round number. Must match what EFI loader uses.
 
 
 	JMP	START						; I read somewhere that some machines wont load a bootsector that doesn't start with 
@@ -209,9 +241,8 @@ MAIN:
 	MOV	BX, EXT2_ROOT_DIR_ADDR				; Read the root directory into memory
 	CALL	READ_SECTORS
 
-jmp SECOND_HALF_START
 	;; We are reaching the end of the 512 byte limit for the first half, jump to the next sector of the bootloader
-	CALL	SECOND_HALF_START
+	JMP SECOND_HALF_START
 
 
 
@@ -492,8 +523,6 @@ SECOND_HALF_START:
 	jmp 	$
 
 
-;;;;;!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-;;;;;!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
@@ -510,7 +539,7 @@ SECOND_HALF_START:
 	add	eax, EXT2_INODE_TABLE_ADDR			; add the inode number to the inode table address, relative offset to /boot/loaders's inode
 	add	eax, 0x28					; i_blocks offset
 ;	xor	edi, edi
-	mov	edi, LOADER_LOAD_ADDR
+	mov	edi, TMP_LOADER_LOAD_ADDR
 
 .read_blocks:
 	mov	ebx, eax					; preserve eax by storing it in ebx which we don't use
@@ -546,7 +575,7 @@ SECOND_HALF_START:
 .done_reading_blocks:
 
 	;; Before we jump to the loader, we have to set up a basic 32 bit protected mode environment. We will enable the A20
-	;; line which allows us to access memory above 1MB, and load a minimal GDT. This is not the GDT that will be used
+	;; line which allows us to access memory above 1MB, and load a basic GDT. This is not the GDT that will be used
 	;; by the operating system; that GDT will be loaded by the loader itself.
 
 
@@ -641,7 +670,7 @@ flush_gdt:
 	mov	fs, ax						; extra segment
 	mov	gs, ax						; extra segment
 
-	mov	ebp, 0x90000					; Setup new stack
+	mov	ebp, 0x90000					; Setup new stack (maybe should be LOADER_LOAD_ADDR?)
 	mov	esp, ebp
 	
 	jmp	PROTECTED_MODE					; jmp over the gdt data structure, we are now fully protected mode
@@ -668,12 +697,18 @@ flush_gdt:
 ;; of the instruction you are running. For example, the HLT instruction is privileged. If you attempt to run the HLT instruction with the CPU set to Ring 0, but the segment is set to Ring 3, the CPU
 ;; will throw a General Protection Fault. It is for this reason that we need a code/data segment for Ring 0, and a code/data segment for Ring 3.
 ;;
+;; Another point that may not seem obvious as to why we need 4 descriptors despite having a page level permission system is that if you were to only have say 2 Ring 0 segment descriptors and rely 
+;; only on paging, the code could just set the CPU privilege level to ring 0 and gain supervisor privileges. Reason being the CPU only compares an instruction's privilege level against its segments
+;; privilege level, not the page containing the instruction.
+;;
+;; The page's privilege level pertains more to reading/writing memory. e.g. if the user is in Ring 3 and tries to read memory from one of the kernel's pages, the CPU will say no.
+;;
 ;;
 ;; Flags and Fields explained:
 ;;
 ;; DPL (Descriptor Privilege Level):
 ;;
-;;	Privilege level of the segment
+;;	Two bit value representing the privilege level of the segment
 ;;
 ;;       -----------------------------------------------------------
 ;;	|    PRIVILEGE LEVEL	| Ring 0 | Ring 1 | Ring 2 | Ring 3 |
@@ -682,7 +717,7 @@ flush_gdt:
 ;;	 -----------------------------------------------------------
 ;;
 ;;
-;; Refer to Volume 3A, Ch. 5, Pg. 2 of the "Intel System Programmers Manual" for more information
+;; Refer to Volume 3A, Ch. 5, Pg. 1 of the "Intel System Programmers Manual" for more information about memory protection on x86.
 gdt:					
 
 gdt_null:							; Null segment descriptor
@@ -761,15 +796,20 @@ DATA_SEG 		equ 	gdt_data - gdt					; Calculate relative offset of the data segme
 ;; From this point forward, we are in 32 bit protected mode.
 BITS 32
 PROTECTED_MODE:
+	;; Before we jmp to the loader, we need to copy it to the correct memory address.
+	MOV	ESI, TMP_LOADER_LOAD_ADDR					; Where to copy data from
+	MOV	EDI, LOADER_LOAD_ADDR						; Where to copy data to
+	MOV	ECX, 0xA00000							; Copy 10MiB of data into the new memory location
+	REP	MOVSW								; Copy the data
 
-	;; now we can jump to the loader. we don't need to do segment:offset anymore bc we are in 32 bit mode so we can just call the address as one long 32 bit one?
-	jmp	LOADER_LOAD_ADDR
+	;; Now we can jump to the loader. We don't need to do segment:offset anymore bc we are in 32 bit mode so the CPU will automatically add the segment in front of the address. e.g CODE_SEG:LOADER_LOAD_ADDR.
+	JMP	LOADER_LOAD_ADDR
 
-	jmp $							; infinite loop, we should never get here
-
-
+	JMP 	$								; infinite loop, we should never get here
 
 
 
 
-TIMES 1024 - ($ -$$) 		DB 	0x00			; This entire bootloader combined cannot be more than 1024 bytes (per EXT2 specification)
+
+
+TIMES 1024 - ($ -$$) 		DB 	0x00					; This entire bootloader combined cannot be more than 1024 bytes (per EXT2 specification)

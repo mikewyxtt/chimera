@@ -674,10 +674,10 @@ gdt_code:							; Code segment descriptor
 	db 10011010b
 
 	; Fields and Flags
-	; ---------------------------------------------------------
-	; | 0 | 0 |    0     |  0  |            0000              |
-	; | G | B | RESERVED | AVL | Segment Limit (Bits 16 - 19) |
-	; ---------------------------------------------------------
+	; ----------------------------------------------------------
+	; | 0 | 0 |    0      |  0  |            0000              |
+	; | G | B | RESERVED* | AVL | Segment Limit (Bits 16 - 19) | *RESERVED bit should always be 0.
+	; ----------------------------------------------------------
 	db 11001111b
 
 
@@ -698,16 +698,16 @@ gdt_data:							; Data segment descriptor
 	; Fields and Flags
 	; ----------------------
 	; | 0 | 00  | 0 | 0000 |
-	; | P | DPL | S | *EWA | *Bit 4 of the TYPE field is always 0 for data segment descriptors	
+	; | P | DPL | S | *EWA | *Bit 4 of the TYPE field is always 0 for data segment descriptors.	
 	;		| TYPE |
 	; ----------------------
 	db 10010010b	
 
 	; Fields and Flags
-	; ---------------------------------------------------------
-	; | 0 | 0 |    0     |  0  |            0000              |
-	; | G | B | RESERVED | AVL | Segment Limit (Bits 16 - 19) |
-	; ---------------------------------------------------------
+	; ----------------------------------------------------------
+	; | 0 | 0 |    0      |  0  |            0000              |
+	; | G | B | RESERVED* | AVL | Segment Limit (Bits 16 - 19) | *RESERVED bit should always be 0.
+	; ----------------------------------------------------------
 	db 11001111b
 
 	; Base Address (Bits 24 - 31)

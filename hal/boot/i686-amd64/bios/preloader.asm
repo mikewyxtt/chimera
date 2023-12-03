@@ -32,6 +32,9 @@ BITS 	16							; We start in 16 bit real mode
 ;; 9) When this is first loaded, the drive number is in register DL. THIS value should be placed back into DL when making INT 13 calls (disk reads) to the BIOS. Currently, we hardcoded 0x80 (primary hard disk) as the value.
 ;;	This is obviously not ideal for production code as we can't guarantee we were loaded from a hard disk. So, the value in DL needs to be stored somewhere safe and restored to DL before the READ_SECTORS calls. This is an easy fix.
 ;;
+;; 10) There is no code to enable A20, only to check if its enabled. Refer to FreeBSD boot0 or GRUB source to find a way to enable A20. QEMU defaults to it being enabled, so you have to find a machine that doesn't have it enabled
+;;	by default to test the code on.
+;;
 
 
 

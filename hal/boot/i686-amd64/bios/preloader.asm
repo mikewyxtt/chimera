@@ -647,8 +647,36 @@ flush_gdt:
 	jmp	PROTECTED_MODE					; jmp over the gdt data structure, we are now fully protected mode
 
 
-; Global Descriptor Table
-; Refer to Volume 3A, Ch. 5, Pg. 2 of the "Intel System Programmers Manual" for more information
+;; Global Descriptor Table
+;;
+;; This GDT will not be used by the operating system, it will be replaced by the loader. The reason we don't set it up here is due to the fact that we
+;; could be booting from UEFI or BIOS. The UEFI spec sets up a GDT with a flat address space, but we really can't guarantee that the flags and fields are
+;; set to the proper values on the thousands of different firmware implementations out there. Therefore, it makes more sense to setup and load a GDT in
+;; the loader, that way whether you boot from UEFI or BIOS we guarantee the desired parameters.
+;;
+;; The only REQUIRED segments are NULL, CODE, and DATA.
+;;
+;; Null is all zeros.
+;; CODE is the code segment, set to Ring 0 privileges 
+;; DATA is the data segment, set to Ring 0 privileges
+;;
+;; All of the segments found here and in the final GDT are setup to occupy the entire address space. Reason being that we want to utilize paging to break up the physical memory into virtual memory,
+;; so we don't need segmentation. Setting the GDT up is required and used slightly for privilege checks but beyond that it's essentially useless and only here for compatibilty reasons.
+;;
+;; Flags and Fields explained:
+;;
+;; DPL (Descriptor Privilege Level):
+;;
+;;	Privilege level of the segment
+;;
+;;       -----------------------------------------------------------
+;;	|    PRIVILEGE LEVEL	| Ring 0 | Ring 1 | Ring 2 | Ring 3 |
+;;	|-----------------------------------------------------------|
+;;	|         VALUE		|   00   |   01   |   10   |   11   |
+;;	 -----------------------------------------------------------
+;;
+;;
+;; Refer to Volume 3A, Ch. 5, Pg. 2 of the "Intel System Programmers Manual" for more information
 gdt:					
 
 gdt_null:							; Null segment descriptor

@@ -1,5 +1,5 @@
-org 0x100000
-bits 32
+;org 0x100000
+;bits 32
 
 extern main					; main() function of the loader
 

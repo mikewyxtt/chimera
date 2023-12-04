@@ -1,11 +1,9 @@
 TARGETS:= 	bios/bootmanager \
 	  	bios/preloader \
-		loader/loader \
-		loader/loader.efi
+		loader/src/bios/start.o
 
 .PHONY: all clean install
 all: $(TARGETS)
-
 
 
 bios/bootmanager: bios/bootmanager.asm
@@ -14,14 +12,14 @@ bios/bootmanager: bios/bootmanager.asm
 bios/preloader: bios/preloader.asm
 	nasm -f bin -o $@ $<
 
-## BIOS version of loader
-loader/loader: loader/loader.asm
-	nasm -f bin -o $@ $<
+## Loader entry point for BIOS systems is written in assembly
+loader/src/bios/start.o: loader/src/bios/start.asm
+	nasm -f elf32 -o $@ $<
 
 ## UEFI version of loader
-loader/loader.efi: loader/uefi_entry.asm
-	nasm -f win32 -o loader/uefi_entry.o $<
-	lld-link /subsystem:efi_application /entry:START /base:0x100000 /out:$@ loader/uefi_entry.o
+#loader/loader.efi: loader/uefi_entry.asm
+#	nasm -f win32 -o loader/uefi_entry.o $<
+#	lld-link /subsystem:efi_application /entry:START /base:0x100000 /out:$@ loader/uefi_entry.o
 
 install:
 #	chmod +x $(TARGETS)
@@ -33,4 +31,3 @@ install:
 
 clean:
 	rm -f $(TARGETS)
-	rm -f loader/uefi_entry.o

@@ -1,0 +1,12 @@
+BITS	32
+
+SECTION .TEXT
+
+GLOBAL _START
+_START:
+	mov	eax, 0xACFA
+	jmp 	$
+
+
+SECTION .DATA
+

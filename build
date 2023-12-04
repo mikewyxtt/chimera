@@ -96,8 +96,9 @@ EOF
 
 	# Next we format the EFI system partition as FAT32 and copy over the UEFI version of 'loader'
 	mkdosfs -F 32 tmp/efi_sys.img
-	# $$ mdir ::/efi/blahblah
-       	# $$ mcopy -i tmp/efi_sys.img hal/boot/loader/loaderx64.elf ::/EFI/BOOTx64.EFI
+	mmd -i tmp/efi_sys.img ::/EFI
+	mmd -i tmp/efi_sys.img ::/EFI/BOOT
+	mcopy -i tmp/efi_sys.img hal/boot/i686-amd64/loader/loader.efi ::/EFI/BOOT/BOOTIA32.EFI
 
 
 

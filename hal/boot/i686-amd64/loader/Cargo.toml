@@ -1,8 +1,16 @@
-[package]
-name = "loader"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = [
+	"bios",
+	"uefi",
+	"loader",
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# Specify we want 2021 editition of Rust
+resolver = "2"
 
-[dependencies]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

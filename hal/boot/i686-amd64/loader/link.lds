@@ -1,11 +1,11 @@
 /* Entry point symbol, aka the first function that is called once loaded. */
-OUTPUT_FORMAT("i-pei-i386") */
+/*OUTPUT_FORMAT("i-pei-i386") */
 ENTRY(_start)
 
 SECTIONS 
 {
 	/* Starting adddress, we use 1MiB. */
-	. = 1M;
+	. = 0x100000;
 
 	/* Code section */
 	.text ALIGN(4096) : {

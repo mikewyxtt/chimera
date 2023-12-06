@@ -1,0 +1,7 @@
+[package]
+name = "bios"
+
+[lib]
+name = "bios"
+crate-type = ["staticlib"]
+path = "lib.rs"

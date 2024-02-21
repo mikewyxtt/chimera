@@ -1,8 +1,0 @@
-bios/preloader
-bios/bootmanager
-loader/loader
-*.o
-*.swp
-*.img
-*.bin
-

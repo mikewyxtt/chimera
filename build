@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 livecd() {
+	# Creates a LiveCD using GRUB's mkrescue tool. The 'iso' folder is turned into the root disk, you can simply install packages/copy files to it.
 	rm -Rf RELEASE
 	mkdir -p iso/boot/grub RELEASE
 
@@ -12,12 +13,11 @@ livecd() {
 }
 
 all() {
-	echo "Building HAL..."
+	echo "Building all..."
 	sh hal/boot/grub-2.12/pkgbuild.sh build
 }
 
 clean() {
-	echo "Building HAL..."
 	sh hal/boot/grub-2.12/pkgbuild.sh clean
 }
 

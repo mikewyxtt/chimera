@@ -1,123 +1,28 @@
 #!/usr/bin/env bash
 
-# packages required for build:
-# make, mtools, e2tools
-
-
-make_all() {
-    	make all -C $1 --no-print-directory
+all() {
+	echo "Building HAL..."
+	sh hal/boot/grub-2.12/pkgbuild.sh build
 }
 
-make_clean() {
-    	make clean -C $1 --no-print-directory
-}
-
-gen_image() {
-
-	# NOTE: All of the values are hard coded in this script. If you wish to make changes, you will need to manually run fdisk to get
-	# the new sector counts and partition offsets.
-	#
-	# The process is pretty simple; first we make a disk image so we can partition it as one disk. Then we copy each partition into
-	# it's own image file, since most tools expect the partitions to be represented as a seperate file (e.g partition 1 of/dev/sda is /dev/sda1).
-	#
-	# Once the partitions are seperated we will format the rootfs as ext2. mkfs.ext2 also has a feature that allows us to copy the contents
-	# of a folder into the root directory during the formatting, so we use that to write the contents of tmp/rootfs onto the new partition
-	#
-	# Then we write the bootmanager to the first sector of the entire image, and the preloader to the first sector of the primary partition. Then we
-	# format the EFI system partition and copy the UEFI loaders over.
-	#
-	# Lastly we carefully write the partitions back into the main disk image and cleanup
-
-	# Create 1.5GB disk image (307200 sectors)
-	mkdir -p tmp/rootfs tmp/efi_sys RELEASE
-	rm -Rf chimera.img
-	if [ ! -f tmp/hdd.img ]; then
-		dd if=/dev/zero of=tmp/hdd.img bs=512 count=3072000
-	fi
-	
-	# Partition the disk image, then split it into two images for easy transfering of files
-	# The following is literally mimicking the keystrokes needed to partition the disk using fdisk
-	fdisk tmp/hdd.img << EOF
-g
-n
-1
-2048
-+512M
-t
-1
-
-n
-2
-1050624
-3071966
-w
-EOF
-
-
-	########################################################################
-	## Split it into two images so we can work with the partitions easily ##
-	########################################################################
-	dd if=tmp/hdd.img of=tmp/efi_sys.img bs=512 skip=2048 count=1048576
-	dd if=tmp/hdd.img of=tmp/rootfs.img bs=512 skip=1050624 count=2021343
-
-
-
-
-
-	################
-	## Copy files ##
-	################
-	echo "Copying files..."
-
-	# Here is where we would run 'make install' for every subproject in the system, then we can transfer the files to the rootfs
-	make -C hal/boot/i686-amd64 install --no-print-directory
-
-	# We format the partition and copy files onto it in the same go
-	mkfs.ext2 -d tmp/rootfs tmp/rootfs.img
-
-
-
-
-
-	########################
-	## Install bootloader ##
-	########################
-	echo "Installing bootloader..."
-	
-	cp hal/boot/i686-amd64/bios/preloader hal/boot/i686-amd64/bios/bootmanager
-	
-	# First we flash the bootmanager and preloader for legacy BIOS systems, being careful to not overwrite the partition table. We also need to copy
-	# the magic number to the last two bytes of the first sector. Then we flash the MBR to the first sector of the primary partition (rootfs.img)
-	dd if=hal/boot/i686-amd64/bios/bootmanager of=tmp/hdd.img conv=notrunc bs=1 count=446
-	dd if=hal/boot/i686-amd64/bios/bootmanager of=tmp/hdd.img conv=notrunc bs=1 count=2 skip=510 seek=510
-
-	dd if=hal/boot/i686-amd64/bios/preloader of=tmp/rootfs.img conv=notrunc bs=1024 count=1
-
-
-	# Next we format the EFI system partition as FAT32 and copy over the UEFI version of 'loader'
-	mkdosfs -F 32 tmp/efi_sys.img
-	mmd -i tmp/efi_sys.img ::/EFI
-	mmd -i tmp/efi_sys.img ::/EFI/BOOT
-	mcopy -i tmp/efi_sys.img hal/boot/i686-amd64/loader/loader.efi ::/EFI/BOOT/BOOTIA32.EFI
-
-
-
-
-
-	################################################
-	## Combine the images back into one, clean up ##
-	################################################
-	dd if=tmp/efi_sys.img of=tmp/hdd.img bs=512 seek=2048 count=1048576 conv=notrunc
-	dd if=tmp/rootfs.img of=tmp/hdd.img bs=512 seek=1050624 count=2021343 conv=notrunc
-	mv tmp/hdd.img RELEASE/CHIMERA-RELEASE-0.1.0-LIVE-HDD.img
-	rm -Rf tmp
+clean() {
+	echo "Building HAL..."
+	sh hal/boot/grub-2.12/pkgbuild.sh clean
 }
 
 
-echo "Building HAL..."
-make_all "hal/boot/i686-amd64"
+iso() {
+	rm -Rf RELEASE
+	mkdir -p iso/boot/grub RELEASE
 
-echo "Generating image..."
-gen_image
+	sh hal/boot/grub-2.12/pkgbuild.sh install
+
+	cp hal/boot/grub-2.12/grub.cfg iso/boot/grub/
+	iso/bin/grub-mkrescue -o RELEASE/chimera.iso iso
+	rm -Rf iso
+}
+
+
+"$@"
 
 

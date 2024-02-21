@@ -6,7 +6,7 @@ build() {
 
     # Check if ./configure was already ran
     if [ ! -f Makefile ]; then
-        ./configure
+        ./configure --prefix=/home/mike/chimera/iso
     fi
 
     make -j8
@@ -14,6 +14,10 @@ build() {
 
 clean() {
     make distclean
+}
+
+install() {
+    make install
 }
 
 # cd to directory of this package, then execute the function specified as an argument

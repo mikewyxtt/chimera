@@ -1,17 +1,6 @@
 #!/usr/bin/env bash
 
-all() {
-	echo "Building HAL..."
-	sh hal/boot/grub-2.12/pkgbuild.sh build
-}
-
-clean() {
-	echo "Building HAL..."
-	sh hal/boot/grub-2.12/pkgbuild.sh clean
-}
-
-
-iso() {
+livecd() {
 	rm -Rf RELEASE
 	mkdir -p iso/boot/grub RELEASE
 
@@ -22,6 +11,19 @@ iso() {
 	rm -Rf iso
 }
 
+all() {
+	echo "Building HAL..."
+	sh hal/boot/grub-2.12/pkgbuild.sh build
+}
+
+clean() {
+	echo "Building HAL..."
+	sh hal/boot/grub-2.12/pkgbuild.sh clean
+}
+
+release() {
+	livecd
+}
 
 "$@"
 

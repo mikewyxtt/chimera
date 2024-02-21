@@ -1,8 +1,8 @@
-This is grub.info, produced by makeinfo version 6.3 from grub.texi.
+This is grub.info, produced by makeinfo version 7.0.3 from grub.texi.
 
-This manual is for GNU GRUB (version 2.12, 5 December 2023).
+This manual is for GNU GRUB (version 2.12, 21 February 2024).
 
-   Copyright (C)
+   Copyright ©
 1999,2000,2001,2002,2004,2006,2008,2009,2010,2011,2012,2013 Free
 Software Foundation, Inc.
 
@@ -24,29 +24,143 @@ START-INFO-DIR-ENTRY
 END-INFO-DIR-ENTRY
 
 
+File: grub.info,  Node: Firmware stalls instead of booting GRUB,  Prev: GRUB only offers a rescue shell,  Up: Troubleshooting
+
+23.2 Firmware stalls instead of booting GRUB
+============================================
+
+The EFI implementation of some older MacBook laptops stalls when it gets
+presented a grub-mkrescue ISO image for x86_64-efi target on an USB
+stick.  Affected are models of year 2010 or earlier.  Workaround is to
+zeroize the bytes 446 to 461 of the EFI partition, where mformat has put
+a partition table entry which claims partition start at block 0.  This
+change will not hamper bootability on other machines.
+
+
+File: grub.info,  Node: User-space utilities,  Next: Obtaining and Building GRUB,  Prev: Troubleshooting,  Up: Top
+
+24 User-space utilities
+***********************
+
+* Menu:
+
+* Invoking grub-install::       How to use the GRUB installer
+* Invoking grub-mkconfig::      Generate a GRUB configuration file
+* Invoking grub-mkpasswd-pbkdf2::
+                                Generate GRUB password hashes
+* Invoking grub-mkrelpath::     Make system path relative to its root
+* Invoking grub-mkrescue::      Make a GRUB rescue image
+* Invoking grub-mount::         Mount a file system using GRUB
+* Invoking grub-probe::         Probe device information for GRUB
+* Invoking grub-script-check::  Check GRUB script file for syntax errors
+
+
+File: grub.info,  Node: Invoking grub-install,  Next: Invoking grub-mkconfig,  Up: User-space utilities
+
+24.1 Invoking grub-install
+==========================
+
+The program ‘grub-install’ generates a GRUB core image using
+‘grub-mkimage’ and installs it on your system.  You must specify the
+device name on which you want to install GRUB, like this:
+
+     grub-install INSTALL_DEVICE
+
+   The device name INSTALL_DEVICE is an OS device name or a GRUB device
+name.
+
+   ‘grub-install’ accepts the following options:
+
+‘--help’
+     Print a summary of the command-line options and exit.
+
+‘--version’
+     Print the version number of GRUB and exit.
+
+‘--boot-directory=DIR’
+     Install GRUB images under the directory ‘DIR/grub/’ This option is
+     useful when you want to install GRUB into a separate partition or a
+     removable disk.  If this option is not specified then it defaults
+     to ‘/boot’, so
+
+          grub-install /dev/sda
+
+     is equivalent to
+
+          grub-install --boot-directory=/boot/ /dev/sda
+
+     Here is an example in which you have a separate “boot” partition
+     which is mounted on ‘/mnt/boot’:
+
+          grub-install --boot-directory=/mnt/boot /dev/sdb
+
+‘--recheck’
+     Recheck the device map, even if ‘/boot/grub/device.map’ already
+     exists.  You should use this option whenever you add/remove a disk
+     into/from your computer.
+
+‘--no-rs-codes’
+     By default on x86 BIOS systems, ‘grub-install’ will use some extra
+     space in the bootloader embedding area for Reed-Solomon
+     error-correcting codes.  This enables GRUB to still boot
+     successfully if some blocks are corrupted.  The exact amount of
+     protection offered is dependent on available space in the embedding
+     area.  R sectors of redundancy can tolerate up to R/2 corrupted
+     sectors.  This redundancy may be cumbersome if attempting to
+     cryptographically validate the contents of the bootloader embedding
+     area, or in more modern systems with GPT-style partition tables
+     (*note BIOS installation::) where GRUB does not reside in any
+     unpartitioned space outside of the MBR. Disable the Reed-Solomon
+     codes with this option.
+
+
+File: grub.info,  Node: Invoking grub-mkconfig,  Next: Invoking grub-mkpasswd-pbkdf2,  Prev: Invoking grub-install,  Up: User-space utilities
+
+24.2 Invoking grub-mkconfig
+===========================
+
+The program ‘grub-mkconfig’ generates a configuration file for GRUB
+(*note Simple configuration::).
+
+     grub-mkconfig -o /boot/grub/grub.cfg
+
+   ‘grub-mkconfig’ accepts the following options:
+
+‘--help’
+     Print a summary of the command-line options and exit.
+
+‘--version’
+     Print the version number of GRUB and exit.
+
+‘-o FILE’
+‘--output=FILE’
+     Send the generated configuration file to FILE.  The default is to
+     send it to standard output.
+
+
 File: grub.info,  Node: Invoking grub-mkpasswd-pbkdf2,  Next: Invoking grub-mkrelpath,  Prev: Invoking grub-mkconfig,  Up: User-space utilities
 
 24.3 Invoking grub-mkpasswd-pbkdf2
 ==================================
 
-The program 'grub-mkpasswd-pbkdf2' generates password hashes for GRUB
+The program ‘grub-mkpasswd-pbkdf2’ generates password hashes for GRUB
 (*note Security::).
 
      grub-mkpasswd-pbkdf2
 
-   'grub-mkpasswd-pbkdf2' accepts the following options:
+   ‘grub-mkpasswd-pbkdf2’ accepts the following options:
 
-'-c NUMBER'
-'--iteration-count=NUMBER'
+‘-c NUMBER’
+‘--iteration-count=NUMBER’
      Number of iterations of the underlying pseudo-random function.
      Defaults to 10000.
 
-'-l NUMBER'
-'--buflen=NUMBER'
+‘-l NUMBER’
+‘--buflen=NUMBER’
      Length of the generated hash.  Defaults to 64.
 
-'-s NUMBER'
-'--salt=NUMBER'
+‘-s NUMBER’
+‘--salt=NUMBER’
      Length of the salt.  Defaults to 64.
 
 
@@ -55,23 +169,23 @@ File: grub.info,  Node: Invoking grub-mkrelpath,  Next: Invoking grub-mkrescue, 
 24.4 Invoking grub-mkrelpath
 ============================
 
-The program 'grub-mkrelpath' makes a file system path relative to the
-root of its containing file system.  For instance, if '/usr' is a mount
+The program ‘grub-mkrelpath’ makes a file system path relative to the
+root of its containing file system.  For instance, if ‘/usr’ is a mount
 point, then:
 
      $ grub-mkrelpath /usr/share/grub/unicode.pf2
-     '/share/grub/unicode.pf2'
+     ‘/share/grub/unicode.pf2’
 
    This is mainly used internally by other GRUB utilities such as
-'grub-mkconfig' (*note Invoking grub-mkconfig::), but may occasionally
+‘grub-mkconfig’ (*note Invoking grub-mkconfig::), but may occasionally
 also be useful for debugging.
 
-   'grub-mkrelpath' accepts the following options:
+   ‘grub-mkrelpath’ accepts the following options:
 
-'--help'
+‘--help’
      Print a summary of the command-line options and exit.
 
-'--version'
+‘--version’
      Print the version number of GRUB and exit.
 
 
@@ -80,52 +194,52 @@ File: grub.info,  Node: Invoking grub-mkrescue,  Next: Invoking grub-mount,  Pre
 24.5 Invoking grub-mkrescue
 ===========================
 
-The program 'grub-mkrescue' generates a bootable GRUB rescue image
+The program ‘grub-mkrescue’ generates a bootable GRUB rescue image
 (*note Making a GRUB bootable CD-ROM::).
 
      grub-mkrescue -o grub.iso
 
-   All arguments not explicitly listed as 'grub-mkrescue' options are
-passed on directly to 'xorriso' in 'mkisofs' emulation mode.  Options
-passed to 'xorriso' will normally be interpreted as 'mkisofs' options;
-if the option '--' is used, then anything after that will be interpreted
-as native 'xorriso' options.
+   All arguments not explicitly listed as ‘grub-mkrescue’ options are
+passed on directly to ‘xorriso’ in ‘mkisofs’ emulation mode.  Options
+passed to ‘xorriso’ will normally be interpreted as ‘mkisofs’ options;
+if the option ‘--’ is used, then anything after that will be interpreted
+as native ‘xorriso’ options.
 
    Non-option arguments specify additional source directories.  This is
 commonly used to add extra files to the image:
 
      mkdir -p disk/boot/grub
-     (add extra files to 'disk/boot/grub')
+     (add extra files to ‘disk/boot/grub’)
      grub-mkrescue -o grub.iso disk
 
-   'grub-mkrescue' accepts the following options:
+   ‘grub-mkrescue’ accepts the following options:
 
-'--help'
+‘--help’
      Print a summary of the command-line options and exit.
 
-'--version'
+‘--version’
      Print the version number of GRUB and exit.
 
-'-o FILE'
-'--output=FILE'
+‘-o FILE’
+‘--output=FILE’
      Save output in FILE.  This "option" is required.
 
-'--modules=MODULES'
+‘--modules=MODULES’
      Pre-load the named GRUB modules in the image.  Multiple entries in
      MODULES should be separated by whitespace (so you will probably
      need to quote this for your shell).
 
-'--rom-directory=DIR'
+‘--rom-directory=DIR’
      If generating images for the QEMU or Coreboot platforms, copy the
-     resulting 'qemu.img' or 'coreboot.elf' files respectively to the
+     resulting ‘qemu.img’ or ‘coreboot.elf’ files respectively to the
      DIR directory as well as including them in the image.
 
-'--xorriso=FILE'
-     Use FILE as the 'xorriso' program, rather than the built-in
+‘--xorriso=FILE’
+     Use FILE as the ‘xorriso’ program, rather than the built-in
      default.
 
-'--grub-mkimage=FILE'
-     Use FILE as the 'grub-mkimage' program, rather than the built-in
+‘--grub-mkimage=FILE’
+     Use FILE as the ‘grub-mkimage’ program, rather than the built-in
      default.
 
 
@@ -134,17 +248,17 @@ File: grub.info,  Node: Invoking grub-mount,  Next: Invoking grub-probe,  Prev: 
 24.6 Invoking grub-mount
 ========================
 
-The program 'grub-mount' performs a read-only mount of any file system
-or file system image that GRUB understands, using GRUB's file system
+The program ‘grub-mount’ performs a read-only mount of any file system
+or file system image that GRUB understands, using GRUB’s file system
 drivers via FUSE. (It is only available if FUSE development files were
 present when GRUB was built.)  This has a number of uses:
 
-   * It provides a convenient way to check how GRUB will view a file
+   • It provides a convenient way to check how GRUB will view a file
      system at boot time.  You can use normal command-line tools to
      compare that view with that of your operating system, making it
      easy to find bugs.
 
-   * It offers true read-only mounts.  Linux does not have these for
+   • It offers true read-only mounts.  Linux does not have these for
      journalling file systems, because it will always attempt to replay
      the journal at mount time; while you can temporarily mark the block
      device read-only to avoid this, that causes the mount to fail.
@@ -152,60 +266,60 @@ present when GRUB was built.)  This has a number of uses:
      systems, it can easily provide a guaranteed read-only mount
      mechanism.
 
-   * It allows you to examine any file system that GRUB understands
+   • It allows you to examine any file system that GRUB understands
      without needing to load additional modules into your running
      kernel, which may be useful in constrained environments such as
      installers.
 
-   * Since it can examine file system images (contained in regular
+   • Since it can examine file system images (contained in regular
      files) just as easily as file systems on block devices, you can use
      it to inspect any file system image that GRUB understands with only
      enough privileges to use FUSE, even if nobody has yet written a
      FUSE module specifically for that file system type.
 
-   Using 'grub-mount' is normally as simple as:
+   Using ‘grub-mount’ is normally as simple as:
 
      grub-mount /dev/sda1 /mnt
 
-   'grub-mount' must be given one or more images and a mount point as
+   ‘grub-mount’ must be given one or more images and a mount point as
 non-option arguments (if it is given more than one image, it will treat
 them as a RAID set), and also accepts the following options:
 
-'--help'
+‘--help’
      Print a summary of the command-line options and exit.
 
-'--version'
+‘--version’
      Print the version number of GRUB and exit.
 
-'-C'
-'--crypto'
+‘-C’
+‘--crypto’
      Mount encrypted devices, prompting for a passphrase if necessary.
 
-'-d STRING'
-'--debug=STRING'
+‘-d STRING’
+‘--debug=STRING’
      Show debugging output for conditions matching STRING.
 
-'-K prompt|FILE'
-'--zfs-key=prompt|FILE'
-     Load a ZFS encryption key.  If you use 'prompt' as the argument,
-     'grub-mount' will read a passphrase from the terminal; otherwise,
+‘-K prompt|FILE’
+‘--zfs-key=prompt|FILE’
+     Load a ZFS encryption key.  If you use ‘prompt’ as the argument,
+     ‘grub-mount’ will read a passphrase from the terminal; otherwise,
      it will read key material from the specified file.
 
-'-r DEVICE'
-'--root=DEVICE'
+‘-r DEVICE’
+‘--root=DEVICE’
      Set the GRUB root device to DEVICE.  You do not normally need to
-     set this; 'grub-mount' will automatically set the root device to
+     set this; ‘grub-mount’ will automatically set the root device to
      the root of the supplied file system.
 
      If DEVICE is just a number, then it will be treated as a partition
      number within the supplied image.  This means that, if you have an
-     image of an entire disk in 'disk.img', then you can use this
+     image of an entire disk in ‘disk.img’, then you can use this
      command to mount its second partition:
 
           grub-mount -r 2 disk.img mount-point
 
-'-v'
-'--verbose'
+‘-v’
+‘--verbose’
      Print verbose messages.
 
 
@@ -214,80 +328,80 @@ File: grub.info,  Node: Invoking grub-probe,  Next: Invoking grub-script-check, 
 24.7 Invoking grub-probe
 ========================
 
-The program 'grub-probe' probes device information for a given path or
+The program ‘grub-probe’ probes device information for a given path or
 device.
 
      grub-probe --target=fs /boot/grub
      grub-probe --target=drive --device /dev/sda1
 
-   'grub-probe' must be given a path or device as a non-option argument,
+   ‘grub-probe’ must be given a path or device as a non-option argument,
 and also accepts the following options:
 
-'--help'
+‘--help’
      Print a summary of the command-line options and exit.
 
-'--version'
+‘--version’
      Print the version number of GRUB and exit.
 
-'-d'
-'--device'
+‘-d’
+‘--device’
      If this option is given, then the non-option argument is a system
-     device name (such as '/dev/sda1'), and 'grub-probe' will print
+     device name (such as ‘/dev/sda1’), and ‘grub-probe’ will print
      information about that device.  If it is not given, then the
-     non-option argument is a filesystem path (such as '/boot/grub'),
-     and 'grub-probe' will print information about the device containing
+     non-option argument is a filesystem path (such as ‘/boot/grub’),
+     and ‘grub-probe’ will print information about the device containing
      that part of the filesystem.
 
-'-m FILE'
-'--device-map=FILE'
+‘-m FILE’
+‘--device-map=FILE’
      Use FILE as the device map (*note Device map::) rather than the
-     default, usually '/boot/grub/device.map'.
+     default, usually ‘/boot/grub/device.map’.
 
-'-t TARGET'
-'--target=TARGET'
+‘-t TARGET’
+‘--target=TARGET’
      Print information about the given path or device as defined by
      TARGET.  The available targets and their meanings are:
 
-     'fs'
+     ‘fs’
           GRUB filesystem module.
-     'fs_uuid'
+     ‘fs_uuid’
           Filesystem Universally Unique Identifier (UUID).
-     'fs_label'
+     ‘fs_label’
           Filesystem label.
-     'drive'
+     ‘drive’
           GRUB device name.
-     'device'
+     ‘device’
           System device name.
-     'partmap'
+     ‘partmap’
           GRUB partition map module.
-     'abstraction'
-          GRUB abstraction module (e.g.  'lvm').
-     'cryptodisk_uuid'
+     ‘abstraction’
+          GRUB abstraction module (e.g.  ‘lvm’).
+     ‘cryptodisk_uuid’
           Crypto device UUID.
-     'msdos_parttype'
+     ‘msdos_parttype’
           MBR partition type code (two hexadecimal digits).
-     'hints_string'
+     ‘hints_string’
           A string of platform search hints suitable for passing to the
-          'search' command (*note search::).
-     'bios_hints'
+          ‘search’ command (*note search::).
+     ‘bios_hints’
           Search hints for the PC BIOS platform.
-     'ieee1275_hints'
+     ‘ieee1275_hints’
           Search hints for the IEEE1275 platform.
-     'baremetal_hints'
+     ‘baremetal_hints’
           Search hints for platforms where disks are addressed directly
           rather than via firmware.
-     'efi_hints'
+     ‘efi_hints’
           Search hints for the EFI platform.
-     'arc_hints'
+     ‘arc_hints’
           Search hints for the ARC platform.
-     'compatibility_hint'
+     ‘compatibility_hint’
           A guess at a reasonable GRUB drive name for this device, which
-          may be used as a fallback if the 'search' command fails.
-     'disk'
+          may be used as a fallback if the ‘search’ command fails.
+     ‘disk’
           System device name for the whole disk.
 
-'-v'
-'--verbose'
+‘-v’
+‘--verbose’
      Print verbose messages.
 
 
@@ -296,23 +410,23 @@ File: grub.info,  Node: Invoking grub-script-check,  Prev: Invoking grub-probe, 
 24.8 Invoking grub-script-check
 ===============================
 
-The program 'grub-script-check' takes a GRUB script file (*note
+The program ‘grub-script-check’ takes a GRUB script file (*note
 Shell-like scripting::) and checks it for syntax errors, similar to
-commands such as 'sh -n'.  It may take a PATH as a non-option argument;
+commands such as ‘sh -n’.  It may take a PATH as a non-option argument;
 if none is supplied, it will read from standard input.
 
      grub-script-check /boot/grub/grub.cfg
 
-   'grub-script-check' accepts the following options:
+   ‘grub-script-check’ accepts the following options:
 
-'--help'
+‘--help’
      Print a summary of the command-line options and exit.
 
-'--version'
+‘--version’
      Print the version number of GRUB and exit.
 
-'-v'
-'--verbose'
+‘-v’
+‘--verbose’
      Print each line of input after reading it.
 
 
@@ -338,8 +452,8 @@ should grab is:
 
      zcat grub-2.12.tar.gz | tar xvf -
 
-   which will create a directory called 'grub-2.12' with all the
-sources.  You can look at the file 'INSTALL' for detailed instructions
+   which will create a directory called ‘grub-2.12’ with all the
+sources.  You can look at the file ‘INSTALL’ for detailed instructions
 on how to build and install GRUB, but you should be able to just do:
 
      cd grub-2.12
@@ -369,36 +483,36 @@ list below before you submit bugs:
      operating system, including the versions of gcc and binutils.
 
   3. If you have trouble with the installation, inform us of how you
-     installed GRUB. Don't omit error messages, if any.  Just 'GRUB
-     hangs up when it boots' is not enough.
+     installed GRUB. Don’t omit error messages, if any.  Just ‘GRUB
+     hangs up when it boots’ is not enough.
 
      The information on your hardware is also essential.  These are
      especially important: the geometries and the partition tables of
      your hard disk drives and your BIOS.
 
   4. If GRUB cannot boot your operating system, write down _everything_
-     you see on the screen.  Don't paraphrase them, like 'The foo OS
+     you see on the screen.  Don’t paraphrase them, like ‘The foo OS
      crashes with GRUB, even though it can boot with the bar boot loader
-     just fine'.  Mention the commands you executed, the messages
+     just fine’.  Mention the commands you executed, the messages
      printed by them, and information on your operating system including
      the version number.
 
   5. Explain what you wanted to do.  It is very useful to know your
-     purpose and your wish, and how GRUB didn't satisfy you.
+     purpose and your wish, and how GRUB didn’t satisfy you.
 
   6. If you can investigate the problem yourself, please do.  That will
      give you and us much more information on the problem.  Attaching a
      patch is even better.
 
      When you attach a patch, make the patch in unified diff format, and
-     write ChangeLog entries.  But, even when you make a patch, don't
+     write ChangeLog entries.  But, even when you make a patch, don’t
      forget to explain the problem, so that we can understand what your
      patch is for.
 
   7. Write down anything that you think might be related.  Please
      understand that we often need to reproduce the same problem you
      encountered in our environment.  So your information should be
-     sufficient for us to do the same thing--Don't forget that we cannot
+     sufficient for us to do the same thing—Don’t forget that we cannot
      see your computer directly.  If you are not sure whether to state a
      fact or leave it out, state it!  Reporting too many things is much
      better than omitting something important.
@@ -441,7 +555,7 @@ D.1 GNU Free Documentation License
 
                       Version 1.2, November 2002
 
-     Copyright (C) 2000,2001,2002 Free Software Foundation, Inc.
+     Copyright © 2000,2001,2002 Free Software Foundation, Inc.
      51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
      Everyone is permitted to copy and distribute verbatim copies
@@ -450,14 +564,14 @@ D.1 GNU Free Documentation License
   0. PREAMBLE
 
      The purpose of this License is to make a manual, textbook, or other
-     functional and useful document "free" in the sense of freedom: to
+     functional and useful document “free” in the sense of freedom: to
      assure everyone the effective freedom to copy and redistribute it,
      with or without modifying it, either commercially or
      noncommercially.  Secondarily, this License preserves for the
      author and publisher a way to get credit for their work, while not
      being considered responsible for modifications made by others.
 
-     This License is a kind of "copyleft", which means that derivative
+     This License is a kind of “copyleft”, which means that derivative
      works of the document must themselves be free in the same sense.
      It complements the GNU General Public License, which is a copyleft
      license designed for free software.
@@ -478,18 +592,18 @@ D.1 GNU Free Documentation License
      be distributed under the terms of this License.  Such a notice
      grants a world-wide, royalty-free license, unlimited in duration,
      to use that work under the conditions stated herein.  The
-     "Document", below, refers to any such manual or work.  Any member
-     of the public is a licensee, and is addressed as "you".  You accept
+     “Document”, below, refers to any such manual or work.  Any member
+     of the public is a licensee, and is addressed as “you”.  You accept
      the license if you copy, modify or distribute the work in a way
      requiring permission under copyright law.
 
-     A "Modified Version" of the Document means any work containing the
+     A “Modified Version” of the Document means any work containing the
      Document or a portion of it, either copied verbatim, or with
      modifications and/or translated into another language.
 
-     A "Secondary Section" is a named appendix or a front-matter section
+     A “Secondary Section” is a named appendix or a front-matter section
      of the Document that deals exclusively with the relationship of the
-     publishers or authors of the Document to the Document's overall
+     publishers or authors of the Document to the Document’s overall
      subject (or to related matters) and contains nothing that could
      fall directly within that overall subject.  (Thus, if the Document
      is in part a textbook of mathematics, a Secondary Section may not
@@ -498,7 +612,7 @@ D.1 GNU Free Documentation License
      of legal, commercial, philosophical, ethical or political position
      regarding them.
 
-     The "Invariant Sections" are certain Secondary Sections whose
+     The “Invariant Sections” are certain Secondary Sections whose
      titles are designated, as being those of Invariant Sections, in the
      notice that says that the Document is released under this License.
      If a section does not fit the above definition of Secondary then it
@@ -506,13 +620,13 @@ D.1 GNU Free Documentation License
      contain zero Invariant Sections.  If the Document does not identify
      any Invariant Sections then there are none.
 
-     The "Cover Texts" are certain short passages of text that are
+     The “Cover Texts” are certain short passages of text that are
      listed, as Front-Cover Texts or Back-Cover Texts, in the notice
      that says that the Document is released under this License.  A
      Front-Cover Text may be at most 5 words, and a Back-Cover Text may
      be at most 25 words.
 
-     A "Transparent" copy of the Document means a machine-readable copy,
+     A “Transparent” copy of the Document means a machine-readable copy,
      represented in a format whose specification is available to the
      general public, that is suitable for revising the document
      straightforwardly with generic text editors or (for images composed
@@ -524,7 +638,7 @@ D.1 GNU Free Documentation License
      been arranged to thwart or discourage subsequent modification by
      readers is not Transparent.  An image format is not Transparent if
      used for any substantial amount of text.  A copy that is not
-     "Transparent" is called "Opaque".
+     “Transparent” is called “Opaque”.
 
      Examples of suitable formats for Transparent copies include plain
      ASCII without markup, Texinfo input format, LaTeX input format,
@@ -537,20 +651,20 @@ D.1 GNU Free Documentation License
      the machine-generated HTML, PostScript or PDF produced by some word
      processors for output purposes only.
 
-     The "Title Page" means, for a printed book, the title page itself,
+     The “Title Page” means, for a printed book, the title page itself,
      plus such following pages as are needed to hold, legibly, the
      material this License requires to appear in the title page.  For
-     works in formats which do not have any title page as such, "Title
-     Page" means the text near the most prominent appearance of the
-     work's title, preceding the beginning of the body of the text.
+     works in formats which do not have any title page as such, “Title
+     Page” means the text near the most prominent appearance of the
+     work’s title, preceding the beginning of the body of the text.
 
-     A section "Entitled XYZ" means a named subunit of the Document
+     A section “Entitled XYZ” means a named subunit of the Document
      whose title either is precisely XYZ or contains XYZ in parentheses
      following text that translates XYZ in another language.  (Here XYZ
      stands for a specific section name mentioned below, such as
-     "Acknowledgements", "Dedications", "Endorsements", or "History".)
-     To "Preserve the Title" of such a section when you modify the
-     Document means that it remains a section "Entitled XYZ" according
+     “Acknowledgements”, “Dedications”, “Endorsements”, or “History”.)
+     To “Preserve the Title” of such a section when you modify the
+     Document means that it remains a section “Entitled XYZ” according
      to this definition.
 
      The Document may include Warranty Disclaimers next to the notice
@@ -580,7 +694,7 @@ D.1 GNU Free Documentation License
 
      If you publish printed copies (or copies in media that commonly
      have printed covers) of the Document, numbering more than 100, and
-     the Document's license notice requires Cover Texts, you must
+     the Document’s license notice requires Cover Texts, you must
      enclose the copies in covers that carry, clearly and legibly, all
      these Cover Texts: Front-Cover Texts on the front cover, and
      Back-Cover Texts on the back cover.  Both covers must also clearly
@@ -652,15 +766,15 @@ D.1 GNU Free Documentation License
           the Addendum below.
 
        G. Preserve in that license notice the full lists of Invariant
-          Sections and required Cover Texts given in the Document's
+          Sections and required Cover Texts given in the Document’s
           license notice.
 
        H. Include an unaltered copy of this License.
 
-       I. Preserve the section Entitled "History", Preserve its Title,
+       I. Preserve the section Entitled “History”, Preserve its Title,
           and add to it an item stating at least the title, year, new
           authors, and publisher of the Modified Version as given on the
-          Title Page.  If there is no section Entitled "History" in the
+          Title Page.  If there is no section Entitled “History” in the
           Document, create one stating the title, year, authors, and
           publisher of the Document as given on its Title Page, then add
           an item describing the Modified Version as stated in the
@@ -670,12 +784,12 @@ D.1 GNU Free Documentation License
           for public access to a Transparent copy of the Document, and
           likewise the network locations given in the Document for
           previous versions it was based on.  These may be placed in the
-          "History" section.  You may omit a network location for a work
+          “History” section.  You may omit a network location for a work
           that was published at least four years before the Document
           itself, or if the original publisher of the version it refers
           to gives permission.
 
-       K. For any section Entitled "Acknowledgements" or "Dedications",
+       K. For any section Entitled “Acknowledgements” or “Dedications”,
           Preserve the Title of the section, and preserve in the section
           all the substance and tone of each of the contributor
           acknowledgements and/or dedications given therein.
@@ -684,11 +798,11 @@ D.1 GNU Free Documentation License
           in their text and in their titles.  Section numbers or the
           equivalent are not considered part of the section titles.
 
-       M. Delete any section Entitled "Endorsements".  Such a section
+       M. Delete any section Entitled “Endorsements”.  Such a section
           may not be included in the Modified Version.
 
        N. Do not retitle any existing section to be Entitled
-          "Endorsements" or to conflict in title with any Invariant
+          “Endorsements” or to conflict in title with any Invariant
           Section.
 
        O. Preserve any Warranty Disclaimers.
@@ -697,15 +811,15 @@ D.1 GNU Free Documentation License
      appendices that qualify as Secondary Sections and contain no
      material copied from the Document, you may at your option designate
      some or all of these sections as invariant.  To do this, add their
-     titles to the list of Invariant Sections in the Modified Version's
+     titles to the list of Invariant Sections in the Modified Version’s
      license notice.  These titles must be distinct from any other
      section titles.
 
-     You may add a section Entitled "Endorsements", provided it contains
+     You may add a section Entitled “Endorsements”, provided it contains
      nothing but endorsements of your Modified Version by various
-     parties--for example, statements of peer review or that the text
-     has been approved by an organization as the authoritative
-     definition of a standard.
+     parties—for example, statements of peer review or that the text has
+     been approved by an organization as the authoritative definition of
+     a standard.
 
      You may add a passage of up to five words as a Front-Cover Text,
      and a passage of up to 25 words as a Back-Cover Text, to the end of
@@ -743,10 +857,10 @@ D.1 GNU Free Documentation License
      combined work.
 
      In the combination, you must combine any sections Entitled
-     "History" in the various original documents, forming one section
-     Entitled "History"; likewise combine any sections Entitled
-     "Acknowledgements", and any sections Entitled "Dedications".  You
-     must delete all sections Entitled "Endorsements."
+     “History” in the various original documents, forming one section
+     Entitled “History”; likewise combine any sections Entitled
+     “Acknowledgements”, and any sections Entitled “Dedications”.  You
+     must delete all sections Entitled “Endorsements.”
 
   6. COLLECTIONS OF DOCUMENTS
 
@@ -767,16 +881,16 @@ D.1 GNU Free Documentation License
 
      A compilation of the Document or its derivatives with other
      separate and independent documents or works, in or on a volume of a
-     storage or distribution medium, is called an "aggregate" if the
+     storage or distribution medium, is called an “aggregate” if the
      copyright resulting from the compilation is not used to limit the
-     legal rights of the compilation's users beyond what the individual
+     legal rights of the compilation’s users beyond what the individual
      works permit.  When the Document is included in an aggregate, this
      License does not apply to the other works in the aggregate which
      are not themselves derivative works of the Document.
 
      If the Cover Text requirement of section 3 is applicable to these
      copies of the Document, then if the Document is less than one half
-     of the entire aggregate, the Document's Cover Texts may be placed
+     of the entire aggregate, the Document’s Cover Texts may be placed
      on covers that bracket the Document within the aggregate, or the
      electronic equivalent of covers if the Document is in electronic
      form.  Otherwise they must appear on printed covers that bracket
@@ -798,8 +912,8 @@ D.1 GNU Free Documentation License
      this License or a notice or disclaimer, the original version will
      prevail.
 
-     If a section in the Document is Entitled "Acknowledgements",
-     "Dedications", or "History", the requirement (section 4) to
+     If a section in the Document is Entitled “Acknowledgements”,
+     “Dedications”, or “History”, the requirement (section 4) to
      Preserve its Title (section 1) will typically require changing the
      actual title.
 
@@ -823,7 +937,7 @@ D.1 GNU Free Documentation License
 
      Each version of the License is given a distinguishing version
      number.  If the Document specifies that a particular numbered
-     version of this License "or any later version" applies to it, you
+     version of this License “or any later version” applies to it, you
      have the option of following the terms and conditions either of
      that specified version or of any later version that has been
      published (not as a draft) by the Free Software Foundation.  If the
@@ -847,7 +961,7 @@ notices just after the title page:
        Free Documentation License''.
 
    If you have Invariant Sections, Front-Cover Texts and Back-Cover
-Texts, replace the "with...Texts."  line with this:
+Texts, replace the “with...Texts.” line with this:
 
          with the Invariant Sections being LIST THEIR TITLES, with
          the Front-Cover Texts being LIST, and with the Back-Cover Texts

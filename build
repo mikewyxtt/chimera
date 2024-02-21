@@ -6,6 +6,10 @@ livecd() {
 	mkdir -p iso/boot/grub RELEASE
 
 	sh hal/boot/grub-2.12/pkgbuild.sh install
+	sh hal/i386/initializer/pkgbuild.sh install
+	
+	# random archive to satisfy grub until we have kernel and servers setup...
+	tar -czf iso/boot/chimera.gz hal/boot/grub-2.12/grub.cfg hal/boot/grub-2.12/pkgbuild.sh
 
 	cp hal/boot/grub-2.12/grub.cfg iso/boot/grub/
 	iso/bin/grub-mkrescue -o RELEASE/chimera.iso iso
@@ -15,6 +19,7 @@ livecd() {
 all() {
 	echo "Building all..."
 	sh hal/boot/grub-2.12/pkgbuild.sh build
+	sh hal/i386/initializer/pkgbuild.sh build
 }
 
 clean() {

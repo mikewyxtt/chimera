@@ -6,7 +6,7 @@ build() {
 
     # Check if ./configure was already ran
     if [ ! -f Makefile ]; then
-        ./configure --prefix=/home/mike/chimera/iso
+        ./configure --prefix=$CHIMERA_SRC_ROOT/iso
     fi
 
     make -j8

@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
+export CHIMERA_SRC_ROOT=$PWD
+
 livecd() {
-	# Creates a LiveCD using GRUB's mkrescue tool. The 'iso' folder is turned into the root disk, you can simply install packages/copy files to it.
+	# Creates a LiveCD using GRUB's mkrescue tool. 
+	# The 'iso' folder is the root of the LiveCD, you can simply install packages/copy files to it.
 	rm -Rf RELEASE
 	mkdir -p iso/boot/grub RELEASE
 
@@ -30,6 +33,5 @@ release() {
 	livecd
 }
 
+
 "$@"
-
-

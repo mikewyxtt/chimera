@@ -6,10 +6,12 @@ void serial_putc(char c);
 void outb(uint16_t port, uint8_t data);
 int strlen(char* str);
 
+
 void main(uint32_t magic, uint32_t multiboot_header_addr) {
     log("asdf");
     while(1);
 }
+
 
 
 void log(char* msg) {

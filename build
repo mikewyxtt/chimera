@@ -12,7 +12,10 @@ livecd() {
 	sh hal/i386/initializer/pkgbuild.sh install
 	
 	# random archive to satisfy grub until we have kernel and servers setup...
-	tar -czf iso/boot/chimera.gz hal/boot/grub-2.12/grub.cfg hal/boot/grub-2.12/pkgbuild.sh
+	mkdir -p syspack
+	cp hal/boot/grub-2.12/grub.cfg hal/boot/grub-2.12/pkgbuild.sh syspack/
+	tar -czf iso/boot/chimera.gz -C syspack .
+	rm -Rf syspack
 
 	cp hal/boot/grub-2.12/grub.cfg iso/boot/grub/
 	iso/bin/grub-mkrescue -o RELEASE/chimera.iso iso

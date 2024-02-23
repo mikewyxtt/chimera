@@ -113,6 +113,32 @@ static void putchar(struct BootInfo *bootinfo, int c) {
         }
 
         // Otherwise, render the char
+
+        /*
+         * The early log framebuffer console is very simple. It uses bitmap fonts which essentially sets a bit for each pixel in the font. The fonts are 8 pixels wide and 16 pixels tall.
+         * The array is easy to use, the first index is the ASCII character code, the second represents the row of pixels within the font. There are 16 rows.
+         * 
+         *
+         * Example for the letter A:
+         * PC_Font['A'][0] =  0b00000000;
+         * PC_Font['A'][1] =  0b00000000;
+         * PC_Font['A'][2] =  0b00000000;
+         * PC_Font['A'][3] =  0b00010000;
+         * PC_Font['A'][4] =  0b00111000;
+         * PC_Font['A'][5] =  0b01101100;
+         * PC_Font['A'][6] =  0b11000110;
+         * PC_Font['A'][7] =  0b11000110;
+         * PC_Font['A'][8] =  0b11111110;
+         * PC_Font['A'][9] =  0b11000110;
+         * PC_Font['A'][10] = 0b11000110;
+         * PC_Font['A'][11] = 0b11000110;
+         * PC_Font['A'][12] = 0b11000110;
+         * PC_Font['A'][13] = 0b00000000;
+         * PC_Font['A'][14] = 0b00000000;
+         * PC_Font['A'][15] = 0b00000000;
+
+         * To print the char we index to the ascii code offset of the array and iterate through each bit of the bitmap. We plot a pixel if the bit is set.
+         */
         for(int font_row = 0; font_row <= 15; font_row++) {
             for(int font_col = 0; font_col <= 7; font_col++) {
                 if((PC_Font[c][font_row] >> (7 - font_col)) & 1) {
@@ -128,7 +154,6 @@ static void putchar(struct BootInfo *bootinfo, int c) {
         else {
             // newline/scroll
         }
-
     }
 
 skipdraw:

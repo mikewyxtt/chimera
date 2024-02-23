@@ -11,7 +11,7 @@ static void putchar(struct BootInfo *bootinfo, int c);
 static void putpixel(struct BootInfo *bootinfo, int x,int y);
 
 /* Array of ASCII bitmap fonts */
-uint8_t PC_Font[][16];
+uint8_t Console_Font[][16];
 
 
 void early_log(struct BootInfo *bootinfo, const char *format, ...) {
@@ -120,28 +120,28 @@ static void putchar(struct BootInfo *bootinfo, int c) {
          * 
          *
          * Example for the letter A:
-         * PC_Font['A'][0] =  0b00000000;
-         * PC_Font['A'][1] =  0b00000000;
-         * PC_Font['A'][2] =  0b00000000;
-         * PC_Font['A'][3] =  0b00010000;
-         * PC_Font['A'][4] =  0b00111000;
-         * PC_Font['A'][5] =  0b01101100;
-         * PC_Font['A'][6] =  0b11000110;
-         * PC_Font['A'][7] =  0b11000110;
-         * PC_Font['A'][8] =  0b11111110;
-         * PC_Font['A'][9] =  0b11000110;
-         * PC_Font['A'][10] = 0b11000110;
-         * PC_Font['A'][11] = 0b11000110;
-         * PC_Font['A'][12] = 0b11000110;
-         * PC_Font['A'][13] = 0b00000000;
-         * PC_Font['A'][14] = 0b00000000;
-         * PC_Font['A'][15] = 0b00000000;
+         * Console_Font['A'][0] =  0b00000000;
+         * Console_Font['A'][1] =  0b00000000;
+         * Console_Font['A'][2] =  0b00000000;
+         * Console_Font['A'][3] =  0b00010000;
+         * Console_Font['A'][4] =  0b00111000;
+         * Console_Font['A'][5] =  0b01101100;
+         * Console_Font['A'][6] =  0b11000110;
+         * Console_Font['A'][7] =  0b11000110;
+         * Console_Font['A'][8] =  0b11111110;
+         * Console_Font['A'][9] =  0b11000110;
+         * Console_Font['A'][10] = 0b11000110;
+         * Console_Font['A'][11] = 0b11000110;
+         * Console_Font['A'][12] = 0b11000110;
+         * Console_Font['A'][13] = 0b00000000;
+         * Console_Font['A'][14] = 0b00000000;
+         * Console_Font['A'][15] = 0b00000000;
 
          * To print the char we index to the ascii code offset of the array and iterate through each bit of the bitmap. We plot a pixel if the bit is set.
          */
         for(int font_row = 0; font_row <= 15; font_row++) {
             for(int font_col = 0; font_col <= 7; font_col++) {
-                if((PC_Font[c][font_row] >> (7 - font_col)) & 1) {
+                if((Console_Font[c][font_row] >> (7 - font_col)) & 1) {
                     putpixel(bootinfo, font_col + (bootinfo->Console.cursor_pos * 8), font_row + (bootinfo->Console.line * 16));
                 }
             }
@@ -190,7 +190,7 @@ static void putpixel(struct BootInfo *bootinfo, int x, int y) {
 }
 
 
-uint8_t PC_Font[][16] = {
+uint8_t Console_Font[][16] = {
         { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  },       //0x00, 
         { 0x00, 0x00, 0x7E, 0x81, 0xA5, 0x81, 0x81, 0xBD, 0x99, 0x81, 0x81, 0x7E, 0x00, 0x00, 0x00, 0x00,  },       //0x01, 
         { 0x00, 0x00, 0x7E, 0xFF, 0xDB, 0xFF, 0xFF, 0xC3, 0xE7, 0xFF, 0xFF, 0x7E, 0x00, 0x00, 0x00, 0x00,  },       //0x02, 

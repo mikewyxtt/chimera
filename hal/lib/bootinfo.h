@@ -51,7 +51,19 @@ struct BootInfo {
 
         /* Framebuffer pitch */
         uint32_t pitch;
+
+        /* Framebuffer depth (Bits per pixel) */
+        uint32_t depth;
     } Framebuffer;
+
+    /* Console Information */
+    struct {
+        int cursor_pos;
+        int line;
+        int max_chars;
+        int max_line;
+
+    } Console;
 
     /* Serial debugging information */
     struct {

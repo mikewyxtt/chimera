@@ -52,3 +52,36 @@ void itoa (char *buf, int base, int d)
       p2--;
     }
 }
+
+void memcpy(uintptr_t *destination, uintptr_t *source, uintptr_t count) {
+    asm volatile ("cld\n\t"
+                  "rep movsb\n\t"
+                  : "=D" (destination), "=S" (source), "=c" (count)
+                  : "0" (destination), "1" (source), "2" (count)
+                  : "memory");
+}
+
+
+void memset(uintptr_t *destination, int value, uintptr_t count) {
+    asm volatile ("cld\n\t"
+                  "rep stosb"
+                  :
+                  : "D" (destination), "a" (value), "c" (count)
+                  : "memory");
+}
+
+void memmove(uintptr_t *destination, uintptr_t *source, uintptr_t count) {
+    uintptr_t *s = source;
+    uintptr_t *d = destination;
+
+    if (s < d && s + count > d) {
+        for (uintptr_t i = count; i != 0; --i) {
+          d[i - 1] = s[i - 1];
+        }
+    }
+    else {
+      for (uintptr_t i = 0; i < count; ++i) {
+        d[i] = s[i];
+      }
+    }
+}

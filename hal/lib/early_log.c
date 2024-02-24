@@ -4,11 +4,21 @@
 #include "io.h"
 #include "string_utils.h"
 
+
 /* Print a single char to the framebuffer and/or serial port */
-static void putchar(struct BootInfo *bootinfo, int c);
+static void PutChar(struct BootInfo *bootinfo, int c);
+
+/* Print a single char to the serial port */
+static void Serial_PutChar(struct BootInfo *bootinfo, int c);
+
+/* Print a single char to the console */
+static void Console_PutChar(struct BootInfo *bootinfo, int c);
+
+/* Scroll the console by one line*/
+static void Console_Scroll(struct BootInfo *bootinfo);
 
 /* Basic function to plot white pixels */
-static void putpixel(struct BootInfo *bootinfo, int x,int y);
+static void FB_PlotPixel(struct BootInfo *bootinfo, int x,int y);
 
 /* Array of ASCII bitmap fonts */
 uint8_t Console_Font[][16];
@@ -24,7 +34,7 @@ void early_log(struct BootInfo *bootinfo, const char *format, ...) {
     while ((c = *format++) != 0)
         {
         if (c != '%')
-            putchar (bootinfo, c);
+            PutChar (bootinfo, c);
         else
             {
             char *p, *p2;
@@ -61,114 +71,32 @@ void early_log(struct BootInfo *bootinfo, const char *format, ...) {
                 string:
                 for (p2 = p; *p2; p2++);
                 for (; p2 < p + pad; p2++)
-                    putchar (bootinfo, pad0 ? '0' : ' ');
+                    PutChar (bootinfo, pad0 ? '0' : ' ');
                 while (*p)
-                    putchar (bootinfo, *p++);
+                    PutChar (bootinfo, *p++);
                 break;
 
                 default:
-                    putchar (bootinfo, va_arg(args, int));
+                    PutChar (bootinfo, va_arg(args, int));
                 break;
                 }
             }
         }
 }
 
-static void putchar(struct BootInfo *bootinfo, int c) {
+static void PutChar(struct BootInfo *bootinfo, int c) {
 
     // Write the char to the framebuffer if we have one.
     if(bootinfo->Framebuffer.enabled) {
-
-        // If it's a newline or tab, just move the cursor without rendering a font.
-        switch(c) {
-            // If it's a tab, index the cursor 4 spaces, unless we don't have room. In which case we newline.
-            case '\t':
-                if (bootinfo->Console.cursor_pos < bootinfo->Console.max_chars - 4) {
-                    bootinfo->Console.cursor_pos += 4;
-                    goto skipdraw;
-                }
-                else {
-                    bootinfo->Console.cursor_pos = 0;
-                    if (bootinfo->Console.line < bootinfo->Console.max_line) {
-                        bootinfo->Console.line +=1;
-                        goto skipdraw;
-                }
-                else {
-                    // scroll
-                    goto skipdraw;
-                }
-                }
-                break;
-            case '\n':
-                bootinfo->Console.cursor_pos = 0;
-                if (bootinfo->Console.line < bootinfo->Console.max_line) {
-                    bootinfo->Console.line +=1;
-                    goto skipdraw;
-                }
-                else {
-                    // scroll
-                    goto skipdraw;
-                }
-                break;
-        }
-
-        // Otherwise, render the char
-
-        /*
-         * The early log framebuffer console is very simple. It uses bitmap fonts which essentially sets a bit for each pixel in the font. The fonts are 8 pixels wide and 16 pixels tall.
-         * The array is easy to use, the first index is the ASCII character code, the second represents the row of pixels within the font. There are 16 rows.
-         * 
-         *
-         * Example for the letter A:
-         * Console_Font['A'][0] =  0b00000000;
-         * Console_Font['A'][1] =  0b00000000;
-         * Console_Font['A'][2] =  0b00000000;
-         * Console_Font['A'][3] =  0b00010000;
-         * Console_Font['A'][4] =  0b00111000;
-         * Console_Font['A'][5] =  0b01101100;
-         * Console_Font['A'][6] =  0b11000110;
-         * Console_Font['A'][7] =  0b11000110;
-         * Console_Font['A'][8] =  0b11111110;
-         * Console_Font['A'][9] =  0b11000110;
-         * Console_Font['A'][10] = 0b11000110;
-         * Console_Font['A'][11] = 0b11000110;
-         * Console_Font['A'][12] = 0b11000110;
-         * Console_Font['A'][13] = 0b00000000;
-         * Console_Font['A'][14] = 0b00000000;
-         * Console_Font['A'][15] = 0b00000000;
-
-         * To print the char we index to the ascii code offset of the array and iterate through each bit of the bitmap. We plot a pixel if the bit is set.
-         */
-        for(int font_row = 0; font_row <= 15; font_row++) {
-            for(int font_col = 0; font_col <= 7; font_col++) {
-                if((Console_Font[c][font_row] >> (7 - font_col)) & 1) {
-                    putpixel(bootinfo, font_col + (bootinfo->Console.cursor_pos * 8), font_row + (bootinfo->Console.line * 16));
-                }
-            }
-        }
-
-        // Index cursor forward
-        if (bootinfo->Console.cursor_pos < bootinfo->Console.max_chars) {
-            bootinfo->Console.cursor_pos++;
-        }
-        else {
-            // newline/scroll
-        }
+        Console_PutChar(bootinfo, c);
     }
-
-skipdraw:
 
     // Write the char to the serial port if it's enabled.
     if(bootinfo->Serial.enabled) {
-        HAL_IO_WriteByte(bootinfo->Serial.port, c);
-
-        // If it's a newline we need to send the carriage return as well, serial is weird
-        if (c == '\n') {
-            HAL_IO_WriteByte(bootinfo->Serial.port, '\r');
-        }
+        Serial_PutChar(bootinfo, c);
     }
 
-    // Make sure we don't overrun the buffer
+    // Make sure we don't overrun the log buffer
     if (bootinfo->EarlyLogBuffer.index < bootinfo->EarlyLogBuffer.size) {
         bootinfo->EarlyLogBuffer.index++;
     }
@@ -177,16 +105,121 @@ skipdraw:
         bootinfo->EarlyLogBuffer.index = 0;
     }
 
-    // Update the last flush index, currently unused
+    // Update the last flush index (currently unused)
     bootinfo->EarlyLogBuffer.last_flush_index = bootinfo->EarlyLogBuffer.index;
 }
 
 
 
-static void putpixel(struct BootInfo *bootinfo, int x, int y) {
-    uintptr_t offset = (y * bootinfo->Framebuffer.width + x) * bootinfo->Framebuffer.depth;
+static void Serial_PutChar(struct BootInfo *bootinfo, int c) {
+    if(bootinfo->Serial.enabled) {
+        HAL_IO_WriteByte(bootinfo->Serial.port, c);
 
-    *((uintptr_t*)(bootinfo->Framebuffer.addr + offset)) = 0xFFFFFF;
+        // If it's a newline we need to send the carriage return as well, serial is weird
+        if (c == '\n') {
+            HAL_IO_WriteByte(bootinfo->Serial.port, '\r');
+        }
+    }
+}
+
+
+static void Console_PutChar(struct BootInfo *bootinfo, int c) {
+    // If it's a newline or tab, just move the cursor without rendering a font.
+    switch(c) {
+        // If it's a tab, index the cursor 4 spaces, unless we don't have room. In which case we newline.
+        case '\t':
+            if (bootinfo->Console.cursor_pos < (bootinfo->Console.max_chars - 4)) {
+                bootinfo->Console.cursor_pos += 4;
+                return;
+            }
+            else {
+                goto newline;
+            }
+            break;
+        case '\n':
+            bootinfo->Console.cursor_pos = 0;
+            goto newline;
+    }
+
+    // Otherwise, render the char
+
+    /*
+     * The early log framebuffer console is very simple. It uses bitmap fonts which essentially sets a bit for each pixel in the font. The fonts are 8 pixels wide and 16 pixels tall.
+     * The array is easy to use, the first index is the ASCII character code, the second represents the row of pixels within the font. There are 16 rows.
+     * 
+     *
+     * Example for the letter 'A':
+     * Console_Font['A'][0] =  0b00000000;
+     * Console_Font['A'][1] =  0b00000000;
+     * Console_Font['A'][2] =  0b00000000;
+     * Console_Font['A'][3] =  0b00010000;
+     * Console_Font['A'][4] =  0b00111000;
+     * Console_Font['A'][5] =  0b01101100;
+     * Console_Font['A'][6] =  0b11000110;
+     * Console_Font['A'][7] =  0b11000110;
+     * Console_Font['A'][8] =  0b11111110;
+     * Console_Font['A'][9] =  0b11000110;
+     * Console_Font['A'][10] = 0b11000110;
+     * Console_Font['A'][11] = 0b11000110;
+     * Console_Font['A'][12] = 0b11000110;
+     * Console_Font['A'][13] = 0b00000000;
+     * Console_Font['A'][14] = 0b00000000;
+     * Console_Font['A'][15] = 0b00000000;
+
+     * To print the char we index to the ascii code offset of the array and iterate through each bit of the bitmap. We plot a pixel if the bit is set.
+     */
+    for(int font_row = 0; font_row <= 15; font_row++) {
+        for(int font_col = 0; font_col <= 7; font_col++) {
+            if((Console_Font[c][font_row] >> (7 - font_col)) & 1) {
+                FB_PlotPixel(bootinfo, font_col + (bootinfo->Console.cursor_pos * 8), font_row + (bootinfo->Console.line * 16));
+            }
+        }
+    }
+
+
+
+    // Index cursor forward
+    if (bootinfo->Console.cursor_pos < bootinfo->Console.max_chars) {
+        bootinfo->Console.cursor_pos++;
+    }
+    else {
+        bootinfo->Console.cursor_pos = 0;
+        goto newline;
+    }
+    return;
+
+    // Check if we are at the last console line. If we aren't, increment it by one line. Otherwise we need to scroll by one line.
+newline:
+    if (bootinfo->Console.line < bootinfo->Console.max_line) {
+        bootinfo->Console.line++;
+        return;
+    }
+    else {
+        bootinfo->Console.line--;
+        Console_Scroll(bootinfo);
+        return;
+    }
+}
+
+
+static void Console_Scroll(struct BootInfo *bootinfo) {
+    const int buffer_size = (bootinfo->Framebuffer.width * bootinfo->Framebuffer.height * bootinfo->Framebuffer.depth) - (bootinfo->Framebuffer.width * 16 * bootinfo->Framebuffer.depth);
+
+    // Shift screen contents up one row
+    memmove((uintptr_t*)bootinfo->Framebuffer.addr,
+
+        // To scroll the screen up, we want to copy everything below the top line (Unsure of why we need to multiply by 8 when its a 16bit tall font..)
+        (uintptr_t*)bootinfo->Framebuffer.addr + (bootinfo->Framebuffer.width * 8 * bootinfo->Framebuffer.depth),
+
+        // Copy everything besides the top row
+        buffer_size);
+}
+
+
+static void FB_PlotPixel(struct BootInfo *bootinfo, int x, int y) {
+        uintptr_t offset = (y * bootinfo->Framebuffer.width + x) * bootinfo->Framebuffer.depth;
+
+        *((uintptr_t*)(bootinfo->Framebuffer.addr + offset)) = 0xFFFFFF;
 }
 
 

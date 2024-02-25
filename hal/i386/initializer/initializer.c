@@ -94,9 +94,8 @@ static void ParseMultibootHeader(struct BootInfo *bootinfo, uintptr_t multiboot_
 
         switch (tag->type) {
         case MULTIBOOT_TAG_TYPE_FRAMEBUFFER:
-
-            // Clang errors out if we define the struct right after the case statement...
-            while(0); 
+            ; // Clang errors out if we define the struct right after the case statement...
+            
             struct multiboot_tag_framebuffer *fbtag = (struct multiboot_tag_framebuffer *) tag;
 
             if (fbtag->common.framebuffer_type == 1) {
@@ -114,7 +113,6 @@ static void ParseMultibootHeader(struct BootInfo *bootinfo, uintptr_t multiboot_
                 bootinfo->Console.line = 0;
                 bootinfo->Console.max_chars = (bootinfo->Framebuffer.width / 8) - 1;
                 bootinfo->Console.max_line = (bootinfo->Framebuffer.height / 16) - 1;
-
             }
             break;
 
@@ -125,12 +123,6 @@ static void ParseMultibootHeader(struct BootInfo *bootinfo, uintptr_t multiboot_
         case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
             bootinfo->MemoryInfo.available_memory = ((struct multiboot_tag_basic_meminfo *) tag)->mem_upper;
             break;
-        
-        case MULTIBOOT_TAG_TYPE_SMBIOS:
-            smbios_major = ((struct multiboot_tag_smbios *) tag)->major;
-            smbios_minor = ((struct multiboot_tag_smbios *) tag)->minor;
-            break;
-
 
         default:
             break;

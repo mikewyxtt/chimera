@@ -16,8 +16,8 @@ DW  0x01                                ; Tell GRUB we want to request info
 DW  0x00                                ; Flags
 DD  0x20                                ; Size
 DD  0x01, 0x03, 0x04, 0x06, 0x08        ; Multiboot information request:
-                                        ;  1: boot command line, 3: module info, 4: basic memory information, 6: memory map, 8: fb info
-DD  0x00                                 ; Padding (Everything myst be 8 byte aligned)
+                                        ;  1: boot command line, 3: module info, 4: basic memory information, 6: memory map 8: fb info
+DD  0x07                                 ; Padding (Everything myst be 8 byte aligned)
 
 ;; Request a framebuffer
 DW  0x05                                ; Tag type. The presence of this tag tells GRUB we have framebuffer support

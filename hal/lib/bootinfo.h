@@ -19,6 +19,12 @@ struct DriverInfo {
     uint32_t size;
 };
 
+struct CriticalComponent {
+    bool present;
+    uintptr_t addr;
+    int size;
+};
+
 struct BootInfo {
     /* Early log buffer information */
     struct {
@@ -44,16 +50,19 @@ struct BootInfo {
         uintptr_t addr;
 
         /* Framebuffer width in pixels */
-        uint32_t width;
+        uint16_t width;
 
         /* Framebuffer height in pixels */
-        uint32_t height;
+        uint16_t height;
 
         /* Framebuffer pitch */
-        uint32_t pitch;
+        uint16_t pitch;
 
-        /* Framebuffer depth (Bits per pixel) */
-        uint32_t depth;
+        /* Framebuffer depth (Bytes per pixel) */
+        uint8_t depth;
+
+        /* Size of the framebuffer in bytes */
+        uint64_t size;
     } Framebuffer;
 
     /* Console Information */
@@ -76,6 +85,7 @@ struct BootInfo {
 
     /* Address and size of critical servers */
     struct {
+        struct CriticalComponent abc;
         /* Virtual File System Server */
         struct {
             uintptr_t addr;
@@ -107,11 +117,18 @@ struct BootInfo {
       struct DriverInfo driverinfo[25];
 
       /* Number of drivers present */
-      int count;
+      uint32_t count;
     } DriverList;
 
+    struct {
+        uint64_t available_memory;
+        struct {
+            //
+        } MemoryMap;
+    } MemoryInfo;
+
     /* Boot parameters passed in from bootloader */
-    char params[100];
+    char *params;
 };
 
 #endif

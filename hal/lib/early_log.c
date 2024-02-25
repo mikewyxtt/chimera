@@ -23,6 +23,13 @@ static void FB_PlotPixel(struct BootInfo *bootinfo, int x,int y);
 /* Array of ASCII bitmap fonts */
 uint8_t Console_Font[][16];
 
+/* We use 8x16 fonts */
+const int FONT_WIDTH = 8;
+const int FONT_HEIGHT = 16;
+
+/* 4 space tab */
+const int TAB_WIDTH = 4;
+
 
 void early_log(struct BootInfo *bootinfo, const char *format, ...) {
     va_list args;
@@ -110,15 +117,12 @@ static void PutChar(struct BootInfo *bootinfo, int c) {
 }
 
 
-
 static void Serial_PutChar(struct BootInfo *bootinfo, int c) {
-    if(bootinfo->Serial.enabled) {
-        HAL_IO_WriteByte(bootinfo->Serial.port, c);
+    HAL_IO_WriteByte(bootinfo->Serial.port, c);
 
-        // If it's a newline we need to send the carriage return as well, serial is weird
-        if (c == '\n') {
-            HAL_IO_WriteByte(bootinfo->Serial.port, '\r');
-        }
+    // If it's a newline we need to send the carriage return as well, serial is weird
+    if (c == '\n') {
+        HAL_IO_WriteByte(bootinfo->Serial.port, '\r');
     }
 }
 
@@ -128,8 +132,8 @@ static void Console_PutChar(struct BootInfo *bootinfo, int c) {
     switch(c) {
         // If it's a tab, index the cursor 4 spaces, unless we don't have room. In which case we newline.
         case '\t':
-            if (bootinfo->Console.cursor_pos < (bootinfo->Console.max_chars - 4)) {
-                bootinfo->Console.cursor_pos += 4;
+            if (bootinfo->Console.cursor_pos < (bootinfo->Console.max_chars - TAB_WIDTH)) {
+                bootinfo->Console.cursor_pos += TAB_WIDTH;
                 return;
             }
             else {
@@ -172,14 +176,13 @@ static void Console_PutChar(struct BootInfo *bootinfo, int c) {
      * 
      * To print the char we index to the ascii code offset of the array and iterate through each bit of the bitmap. We plot a pixel if the bit is set.
      */
-    for(int font_row = 0; font_row <= 15; font_row++) {
+    for(int font_row = 0; font_row <= (FONT_HEIGHT - 1); font_row++) {
         for(int font_col = 0; font_col <= 7; font_col++) {
-            if((Console_Font[c][font_row] >> (7 - font_col)) & 1) {
-                FB_PlotPixel(bootinfo, font_col + (bootinfo->Console.cursor_pos * 8), font_row + (bootinfo->Console.line * 16));
+            if((Console_Font[c][font_row] >> ((FONT_WIDTH - 1) - font_col)) & 1) {
+                FB_PlotPixel(bootinfo, font_col + (bootinfo->Console.cursor_pos * FONT_WIDTH), font_row + (bootinfo->Console.line * FONT_HEIGHT));
             }
         }
     }
-
 
 
     // Index cursor forward
@@ -196,11 +199,9 @@ static void Console_PutChar(struct BootInfo *bootinfo, int c) {
 newline:
     if (bootinfo->Console.line < bootinfo->Console.max_line) {
         bootinfo->Console.line++;
-        return;
     }
     else {
         Console_Scroll(bootinfo);
-        return;
     }
 }
 
@@ -211,10 +212,10 @@ static void Console_Scroll(struct BootInfo *bootinfo) {
     memmove((uintptr_t*)bootinfo->Framebuffer.addr,
 
         // To scroll the screen up, we want to copy everything below the top line 
-        (uintptr_t*)(bootinfo->Framebuffer.addr + (bootinfo->Framebuffer.pitch * 16)),
+        (uintptr_t*)(bootinfo->Framebuffer.addr + (bootinfo->Framebuffer.pitch * FONT_HEIGHT)),
 
         // Copy everything besides the top row
-        (bootinfo->Framebuffer.size) - (bootinfo->Framebuffer.pitch * 16));
+        (bootinfo->Framebuffer.size) - (bootinfo->Framebuffer.pitch * FONT_HEIGHT));
 }
 
 

@@ -52,8 +52,6 @@ void main(uint32_t magic, uint32_t multiboot_header_addr) {
 
     early_log(&bootinfo, "System Info:\n");
     early_log(&bootinfo, "\tAvailable Memory: %dMB\n", bootinfo.MemoryInfo.available_memory / 1024);
-    early_log(&bootinfo, "\tSMBIOS Version: %d.%d\n", smbios_major, smbios_minor);
-    
     
     early_log(&bootinfo, "Misc. Info:\n");
     early_log(&bootinfo, "\tLog buffer size: %d\n", bootinfo.EarlyLogBuffer.size);

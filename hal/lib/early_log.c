@@ -177,7 +177,7 @@ static void Console_PutChar(struct BootInfo *bootinfo, int c) {
      * To print the char we index to the ascii code offset of the array and iterate through each bit of the bitmap. We plot a pixel if the bit is set.
      */
     for(int font_row = 0; font_row <= (FONT_HEIGHT - 1); font_row++) {
-        for(int font_col = 0; font_col <= 7; font_col++) {
+        for(int font_col = 0; font_col <= FONT_WIDTH; font_col++) {
             if((Console_Font[c][font_row] >> ((FONT_WIDTH - 1) - font_col)) & 1) {
                 FB_PlotPixel(bootinfo, font_col + (bootinfo->Console.cursor_pos * FONT_WIDTH), font_row + (bootinfo->Console.line * FONT_HEIGHT));
             }
